@@ -7,9 +7,9 @@ import (
 	rlp "github.com/ethereum/go-ethereum/rlp"
 	//trie "github.com/ethereum/go-ethereum/trie"
 
-	cid "gx/ipfs/QmV5gPoRsjN1Gid3LMdNZTyfCtP2DsvqEbMAmz82RmmiGk/go-cid"
-	node "gx/ipfs/QmYDscK7dmdo2GZ9aumS8s5auUUAH5mR1jvj5pYhWusfK7/go-ipld-node"
-	mh "gx/ipfs/QmbZ6Cee2uHjG7hf19qLHppgKDRtaG4CVtMzdmK9VCVqLu/go-multihash"
+	cid "github.com/ipfs/go-cid"
+	node "github.com/ipfs/go-ipld-node"
+	mh "github.com/multiformats/go-multihash"
 )
 
 type TrieNode struct {
