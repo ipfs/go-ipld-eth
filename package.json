@@ -1,0 +1,22 @@
+{
+  "author": "whyrusleeping",
+  "bugs": {},
+  "gx": {
+    "dvcsimport": "github.com/ipfs/go-ipld-eth"
+  },
+  "gxDependencies": [
+    {
+      "author": "whyrusleeping",
+      "hash": "QmYDscK7dmdo2GZ9aumS8s5auUUAH5mR1jvj5pYhWusfK7",
+      "name": "go-ipld-node",
+      "version": "0.4.5"
+    }
+  ],
+  "gxVersion": "0.10.0",
+  "language": "go",
+  "license": "",
+  "name": "go-ipld-eth",
+  "releaseCmd": "git commit -a -m \"gx publish $VERSION\"",
+  "version": "0.0.0"
+}
+
