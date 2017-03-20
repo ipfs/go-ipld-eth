@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"io"
 
-	cid "github.com/ipfs/go-cid"
-	node "github.com/ipfs/go-ipld-node"
-	mh "github.com/multiformats/go-multihash"
+	cid "gx/ipfs/QmV5gPoRsjN1Gid3LMdNZTyfCtP2DsvqEbMAmz82RmmiGk/go-cid"
+	node "gx/ipfs/QmYDscK7dmdo2GZ9aumS8s5auUUAH5mR1jvj5pYhWusfK7/go-ipld-node"
+	mh "gx/ipfs/QmbZ6Cee2uHjG7hf19qLHppgKDRtaG4CVtMzdmK9VCVqLu/go-multihash"
 
 	common "github.com/ethereum/go-ethereum/common"
 	types "github.com/ethereum/go-ethereum/core/types"
@@ -86,7 +86,7 @@ func (db *db) Put(k []byte, val []byte) error {
 	copy(mval, val)
 	tn := &TrieNode{
 		codec: MEthTxTrie,
-		Val:   mval,
+		val:   mval,
 	}
 	db.vals[tn.Cid().KeyString()] = tn
 	return nil
@@ -191,7 +191,25 @@ func (b *EthBlock) RawData() []byte {
 }
 
 func (b *EthBlock) Resolve(p []string) (interface{}, []string, error) {
-	return nil, nil, nil
+	if len(p) == 0 {
+		return b, nil, nil
+	}
+
+	switch p[0] {
+	case "tx":
+		return &node.Link{Cid: toCid(MEthTxTrie, b.header.TxHash.Bytes())}, p[1:], nil
+	default:
+		return nil, nil, fmt.Errorf("no such link")
+	}
+}
+
+func toCid(ctype uint64, h []byte) *cid.Cid {
+	buf, err := mh.Encode(h, mh.KECCAK_256)
+	if err != nil {
+		panic(err)
+	}
+
+	return cid.NewCidV1(ctype, mh.Multihash(buf))
 }
 
 func (b *EthBlock) ResolveLink(p []string) (*node.Link, []string, error) {
