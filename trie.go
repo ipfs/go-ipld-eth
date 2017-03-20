@@ -39,8 +39,20 @@ func NewTrieNode(data []byte) (node.Node, error) {
 		}
 		return &Tx{&t}, nil
 	case 17:
+		var parsed []interface{}
+		for _, v := range i {
+			bv := v.([]byte)
+			switch len(bv) {
+			case 0:
+				parsed = append(parsed, nil)
+			case 32:
+				parsed = append(parsed, toCid(MEthTxTrie, bv))
+			default:
+				return nil, fmt.Errorf("unrecognized object in trie: %v", bv)
+			}
+		}
 		return &TrieNode{
-			Arr:   i,
+			Arr:   parsed,
 			val:   data,
 			codec: MEthTxTrie,
 		}, nil
@@ -98,18 +110,12 @@ func (b *TrieNode) Resolve(p []string) (interface{}, []string, error) {
 		return nil, nil, fmt.Errorf("index in trie out of range")
 	}
 
-	bytes, ok := b.Arr[i].([]byte)
+	c, ok := b.Arr[i].(*cid.Cid)
 	if !ok {
 		return nil, nil, fmt.Errorf("expected trie array element to be bytes")
 	}
 
-	if len(bytes) == 32 {
-		// probably a hash
-		return &node.Link{Cid: toCid(MEthTxTrie, bytes)}, p[1:], nil
-	}
-
-	fmt.Println(len(b.Arr[i].([]byte)))
-	return b.Arr[i], p[1:], nil
+	return &node.Link{Cid: c}, p[1:], nil
 }
 
 func (b *TrieNode) ResolveLink(p []string) (*node.Link, []string, error) {

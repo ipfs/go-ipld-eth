@@ -106,3 +106,7 @@ func (b *Tx) String() string {
 func (b *Tx) Tree(p string, depth int) []string {
 	return nil
 }
+
+func (b *Tx) BaseTx() *types.Transaction {
+	return b.tx
+}
