@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"fmt"
 
-	cid "gx/ipfs/QmV5gPoRsjN1Gid3LMdNZTyfCtP2DsvqEbMAmz82RmmiGk/go-cid"
-	node "gx/ipfs/QmYDscK7dmdo2GZ9aumS8s5auUUAH5mR1jvj5pYhWusfK7/go-ipld-node"
-	mh "gx/ipfs/QmbZ6Cee2uHjG7hf19qLHppgKDRtaG4CVtMzdmK9VCVqLu/go-multihash"
+	cid "github.com/ipfs/go-cid"
+	node "github.com/ipfs/go-ipld-node"
+	mh "github.com/multiformats/go-multihash"
 
 	types "github.com/ethereum/go-ethereum/core/types"
+	rlp "github.com/ethereum/go-ethereum/rlp"
 )
 
 type Tx struct {
@@ -17,7 +18,7 @@ type Tx struct {
 
 func (b *Tx) Cid() *cid.Cid {
 	c, err := cid.Prefix{
-		Codec:    cid.EthereumTx,
+		Codec:    MEthTx,
 		Version:  1,
 		MhType:   mh.KECCAK_256,
 		MhLength: -1,
@@ -26,6 +27,15 @@ func (b *Tx) Cid() *cid.Cid {
 		panic(err)
 	}
 	return c
+}
+
+func ParseTx(data []byte) (*Tx, error) {
+	var t types.Transaction
+	err := rlp.DecodeBytes(data, &t)
+	if err != nil {
+		return nil, err
+	}
+	return &Tx{&t}, nil
 }
 
 func (t *Tx) MarshalJSON() ([]byte, error) {

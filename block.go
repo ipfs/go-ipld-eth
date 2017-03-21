@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"io"
 
-	cid "gx/ipfs/QmV5gPoRsjN1Gid3LMdNZTyfCtP2DsvqEbMAmz82RmmiGk/go-cid"
-	node "gx/ipfs/QmYDscK7dmdo2GZ9aumS8s5auUUAH5mR1jvj5pYhWusfK7/go-ipld-node"
-	mh "gx/ipfs/QmbZ6Cee2uHjG7hf19qLHppgKDRtaG4CVtMzdmK9VCVqLu/go-multihash"
+	cid "github.com/ipfs/go-cid"
+	node "github.com/ipfs/go-ipld-node"
+	mh "github.com/multiformats/go-multihash"
 
 	common "github.com/ethereum/go-ethereum/common"
 	types "github.com/ethereum/go-ethereum/core/types"
@@ -145,7 +145,7 @@ func (b *EthBlock) MarshalJSON() ([]byte, error) {
 		"mixdigest":  b.header.MixDigest,
 		"nonce":      b.header.Nonce,
 		"number":     b.header.Number,
-		"parent":     castCommonHash(b.header.ParentHash, cid.EthereumBlock),
+		"parent":     castCommonHash(b.header.ParentHash, MEthBlock),
 		"receipts":   castCommonHash(b.header.ReceiptHash, MEthTxReceiptTrie),
 		"root":       castCommonHash(b.header.Root, MEthStateTrie),
 		"tx":         castCommonHash(b.header.TxHash, MEthTxTrie),
@@ -156,7 +156,7 @@ func (b *EthBlock) MarshalJSON() ([]byte, error) {
 
 func (b *EthBlock) Cid() *cid.Cid {
 	c, err := cid.Prefix{
-		Codec:    cid.EthereumBlock,
+		Codec:    MEthBlock,
 		Version:  1,
 		MhType:   mh.KECCAK_256,
 		MhLength: -1,
@@ -213,7 +213,16 @@ func toCid(ctype uint64, h []byte) *cid.Cid {
 }
 
 func (b *EthBlock) ResolveLink(p []string) (*node.Link, []string, error) {
-	return nil, nil, nil
+	obj, rest, err := b.Resolve(p)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if lnk, ok := obj.(*node.Link); ok {
+		return lnk, rest, nil
+	}
+
+	return nil, nil, fmt.Errorf("resolved item was not a link")
 }
 
 func (b *EthBlock) Size() (uint64, error) {

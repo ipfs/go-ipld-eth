@@ -9,9 +9,9 @@ import (
 	types "github.com/ethereum/go-ethereum/core/types"
 	rlp "github.com/ethereum/go-ethereum/rlp"
 
-	cid "gx/ipfs/QmV5gPoRsjN1Gid3LMdNZTyfCtP2DsvqEbMAmz82RmmiGk/go-cid"
-	node "gx/ipfs/QmYDscK7dmdo2GZ9aumS8s5auUUAH5mR1jvj5pYhWusfK7/go-ipld-node"
-	mh "gx/ipfs/QmbZ6Cee2uHjG7hf19qLHppgKDRtaG4CVtMzdmK9VCVqLu/go-multihash"
+	cid "github.com/ipfs/go-cid"
+	node "github.com/ipfs/go-ipld-node"
+	mh "github.com/multiformats/go-multihash"
 )
 
 type TrieNode struct {
@@ -37,7 +37,11 @@ func NewTrieNode(data []byte) (node.Node, error) {
 		if err := rlp.DecodeBytes(i[1].([]byte), &t); err != nil {
 			return nil, err
 		}
-		return &Tx{&t}, nil
+		return &TrieNode{
+			Arr:   []interface{}{out, &Tx{&t}},
+			val:   data,
+			codec: MEthTxTrie,
+		}, nil
 	case 17:
 		var parsed []interface{}
 		for _, v := range i {
@@ -110,12 +114,15 @@ func (b *TrieNode) Resolve(p []string) (interface{}, []string, error) {
 		return nil, nil, fmt.Errorf("index in trie out of range")
 	}
 
-	c, ok := b.Arr[i].(*cid.Cid)
-	if !ok {
-		return nil, nil, fmt.Errorf("expected trie array element to be bytes")
+	switch obj := b.Arr[i].(type) {
+	case *cid.Cid:
+		return &node.Link{Cid: obj}, p[1:], nil
+	case *Tx:
+		return obj, p[1:], nil
+	default:
+		return nil, nil, fmt.Errorf("unexpected object type in trie")
 	}
 
-	return &node.Link{Cid: c}, p[1:], nil
 }
 
 func (b *TrieNode) ResolveLink(p []string) (*node.Link, []string, error) {
