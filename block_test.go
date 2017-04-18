@@ -14,7 +14,7 @@ func TestBlockParsing(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	blk, _, _, _, err := FromRlpBlockMessage(fi)
+	blk, txs, _, _, err := FromRlpBlockMessage(fi)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,6 +30,7 @@ func TestBlockParsing(t *testing.T) {
 	if !bytes.HasSuffix(c.Bytes(), hval) {
 		t.Fatal("expected hashes to match")
 	}
+	_ = txs
 }
 
 func TestBlockWithTxParsing(t *testing.T) {
@@ -39,7 +40,7 @@ func TestBlockWithTxParsing(t *testing.T) {
 	}
 	defer fi.Close()
 
-	blk, txs, _, uncles, err := FromRlpBlockMessage(fi)
+	blk, txs, tries, uncles, err := FromRlpBlockMessage(fi)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,4 +48,20 @@ func TestBlockWithTxParsing(t *testing.T) {
 	_ = txs
 	_ = blk
 	_ = uncles
+	_ = tries
+}
+
+func TestBlockWithOddTransactions(t *testing.T) {
+	fi, err := os.Open("test_data/odd_block.bin")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer fi.Close()
+
+	blk, err := DecodeBlock(fi)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Printf("%x\n", blk.Tx().Bytes())
 }

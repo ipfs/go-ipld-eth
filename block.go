@@ -7,7 +7,7 @@ import (
 	"io"
 
 	cid "github.com/ipfs/go-cid"
-	node "github.com/ipfs/go-ipld-node"
+	node "github.com/ipfs/go-ipld-format"
 	mh "github.com/multiformats/go-multihash"
 
 	common "github.com/ethereum/go-ethereum/common"
@@ -48,6 +48,7 @@ func FromRlpBlockMessage(r io.Reader) (*EthBlock, []*Tx, []*TrieNode, []*EthBloc
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
+	fmt.Println("blocks txhash: ", b.TxHash().Hex())
 
 	var uncles []*EthBlock
 	for _, u := range b.Uncles() {
@@ -112,11 +113,20 @@ func buildTreeFromTxs(txs []*Tx) ([]*TrieNode, error) {
 		tr.Update(key, tx.RawData())
 	}
 
-	tr.Commit()
+	_, err = tr.Commit()
+	if err != nil {
+		return nil, err
+	}
+
 	var out []*TrieNode
 	for _, nd := range d.vals {
 		out = append(out, nd)
 	}
+
+	if len(out) == 0 {
+		return []*TrieNode{{val: []byte{0x80}, codec: MEthTxTrie}}, nil
+	}
+	fmt.Printf("txtrieroot: %s\n", tr.Hash().Hex())
 
 	return out, nil
 }
@@ -167,6 +177,14 @@ func (b *EthBlock) Cid() *cid.Cid {
 	return c
 }
 
+func (b *EthBlock) Parent() *cid.Cid {
+	return toCid(MEthBlock, b.header.ParentHash.Bytes())
+}
+
+func (b *EthBlock) Tx() *cid.Cid {
+	return castCommonHash(b.header.TxHash, MEthTxTrie)
+}
+
 func (b *EthBlock) Copy() node.Node {
 	panic("dont use this yet")
 }
@@ -198,6 +216,8 @@ func (b *EthBlock) Resolve(p []string) (interface{}, []string, error) {
 	switch p[0] {
 	case "tx":
 		return &node.Link{Cid: toCid(MEthTxTrie, b.header.TxHash.Bytes())}, p[1:], nil
+	case "parent":
+		return &node.Link{Cid: toCid(MEthBlock, b.header.ParentHash.Bytes())}, p[1:], nil
 	default:
 		return nil, nil, fmt.Errorf("no such link")
 	}

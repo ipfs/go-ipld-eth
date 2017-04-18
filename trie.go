@@ -1,6 +1,7 @@
 package ipldeth
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -10,7 +11,7 @@ import (
 	rlp "github.com/ethereum/go-ethereum/rlp"
 
 	cid "github.com/ipfs/go-cid"
-	node "github.com/ipfs/go-ipld-node"
+	node "github.com/ipfs/go-ipld-format"
 	mh "github.com/multiformats/go-multihash"
 )
 
@@ -21,6 +22,14 @@ type TrieNode struct {
 }
 
 func NewTrieNode(data []byte) (node.Node, error) {
+	fmt.Printf("Parse trie node: %x\n", data)
+	if bytes.Equal(data, []byte{0x80}) {
+		return &TrieNode{val: []byte{0x80}, codec: MEthTxTrie}, nil
+	}
+
+	aaa := TrieNode{val: data, codec: MEthTxTrie}
+	fmt.Println(aaa.HexHash(), aaa.Cid())
+
 	var i []interface{}
 	err := rlp.DecodeBytes(data, &i)
 	if err != nil {
@@ -76,6 +85,10 @@ func (b *TrieNode) Cid() *cid.Cid {
 		panic(err)
 	}
 	return c
+}
+
+func (tn *TrieNode) HexHash() string {
+	return fmt.Sprintf("%x", tn.Cid().Bytes()[4:])
 }
 
 func (b *TrieNode) MarshalJSON() ([]byte, error) {

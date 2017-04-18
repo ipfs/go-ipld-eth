@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	cid "github.com/ipfs/go-cid"
-	node "github.com/ipfs/go-ipld-node"
+	node "github.com/ipfs/go-ipld-format"
 	mh "github.com/multiformats/go-multihash"
 
 	types "github.com/ethereum/go-ethereum/core/types"
