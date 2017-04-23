@@ -102,7 +102,7 @@ func (b *Tx) ResolveLink(p []string) (*node.Link, []string, error) {
 }
 
 func (b *Tx) Size() (uint64, error) {
-	panic("don't do size")
+	return uint64(b.tx.Size().Int64()), nil
 }
 
 func (b *Tx) Stat() (*node.NodeStat, error) {
@@ -114,7 +114,7 @@ func (b *Tx) String() string {
 }
 
 func (b *Tx) Tree(p string, depth int) []string {
-	return nil
+	return []string{"toAddress", "value", "data", "nonce", "gasPrice", "gas"}
 }
 
 func (b *Tx) BaseTx() *types.Transaction {

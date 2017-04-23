@@ -48,7 +48,6 @@ func FromRlpBlockMessage(r io.Reader) (*EthBlock, []*Tx, []*TrieNode, []*EthBloc
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
-	fmt.Println("blocks txhash: ", b.TxHash().Hex())
 
 	var uncles []*EthBlock
 	for _, u := range b.Uncles() {
@@ -126,7 +125,6 @@ func buildTreeFromTxs(txs []*Tx) ([]*TrieNode, error) {
 	if len(out) == 0 {
 		return []*TrieNode{{val: []byte{0x80}, codec: MEthTxTrie}}, nil
 	}
-	fmt.Printf("txtrieroot: %s\n", tr.Hash().Hex())
 
 	return out, nil
 }
@@ -190,7 +188,13 @@ func (b *EthBlock) Copy() node.Node {
 }
 
 func (b *EthBlock) Links() []*node.Link {
-	return nil
+	return []*node.Link{
+		&node.Link{Cid: castCommonHash(b.header.ParentHash, MEthBlock)},
+		&node.Link{Cid: castCommonHash(b.header.ReceiptHash, MEthTxReceiptTrie)},
+		&node.Link{Cid: castCommonHash(b.header.Root, MEthStateTrie)},
+		&node.Link{Cid: castCommonHash(b.header.TxHash, MEthTxTrie)},
+		&node.Link{Cid: castCommonHash(b.header.UncleHash, MEthBlockList)},
+	}
 }
 
 func (b *EthBlock) Loggable() map[string]interface{} {
@@ -246,7 +250,8 @@ func (b *EthBlock) ResolveLink(p []string) (*node.Link, []string, error) {
 }
 
 func (b *EthBlock) Size() (uint64, error) {
-	panic("don't do size")
+	// TODO:
+	return 0, nil
 }
 
 func (b *EthBlock) Stat() (*node.NodeStat, error) {

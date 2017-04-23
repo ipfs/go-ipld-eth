@@ -22,13 +22,9 @@ type TrieNode struct {
 }
 
 func NewTrieNode(data []byte) (node.Node, error) {
-	fmt.Printf("Parse trie node: %x\n", data)
 	if bytes.Equal(data, []byte{0x80}) {
 		return &TrieNode{val: []byte{0x80}, codec: MEthTxTrie}, nil
 	}
-
-	aaa := TrieNode{val: data, codec: MEthTxTrie}
-	fmt.Println(aaa.HexHash(), aaa.Cid())
 
 	var i []interface{}
 	err := rlp.DecodeBytes(data, &i)
@@ -38,16 +34,22 @@ func NewTrieNode(data []byte) (node.Node, error) {
 
 	switch len(i) {
 	case 2:
-		var out interface{}
-		if err := rlp.DecodeBytes(i[0].([]byte), &out); err != nil {
-			return nil, err
-		}
-		var t types.Transaction
-		if err := rlp.DecodeBytes(i[1].([]byte), &t); err != nil {
-			return nil, err
+		key := i[0].([]byte)
+
+		valb := i[1].([]byte)
+
+		var val interface{}
+		if len(valb) == 32 {
+			val = toCid(MEthTxTrie, valb)
+		} else {
+			var t types.Transaction
+			if err := rlp.DecodeBytes(i[1].([]byte), &t); err != nil {
+				return nil, err
+			}
+			val = &Tx{&t}
 		}
 		return &TrieNode{
-			Arr:   []interface{}{out, &Tx{&t}},
+			Arr:   []interface{}{key, val},
 			val:   data,
 			codec: MEthTxTrie,
 		}, nil
@@ -100,7 +102,14 @@ func (b *TrieNode) Copy() node.Node {
 }
 
 func (b *TrieNode) Links() []*node.Link {
-	return nil
+	var out []*node.Link
+	for _, i := range b.Arr {
+		c, ok := i.(*cid.Cid)
+		if ok {
+			out = append(out, &node.Link{Cid: c})
+		}
+	}
+	return out
 }
 
 func (b *TrieNode) Loggable() map[string]interface{} {
