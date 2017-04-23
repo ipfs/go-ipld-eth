@@ -17,6 +17,6 @@
   "license": "",
   "name": "go-ipld-eth",
   "releaseCmd": "git commit -a -m \"gx publish $VERSION\"",
-  "version": "0.0.0"
+  "version": "0.0.1"
 }
 
