@@ -25,7 +25,7 @@ func (ep *EthereumPlugin) Init() error {
 }
 
 func (ep *EthereumPlugin) Name() string {
-	return "ethereum"
+	return "ipld-ethereum"
 }
 
 func (ep *EthereumPlugin) Version() string {
