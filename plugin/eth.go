@@ -12,6 +12,10 @@ import (
 	node "github.com/ipfs/go-ipld-format"
 )
 
+var Plugins = []plugin.Plugin{
+	&EthereumPlugin{},
+}
+
 type EthereumPlugin struct{}
 
 var _ plugin.PluginIPLD = (*EthereumPlugin)(nil)
