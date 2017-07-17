@@ -6,6 +6,8 @@ Add ethereum support to ipfs!
 Make sure to rewrite the gx dependencies in the directory above first, then
 Either run `make` or `go build -buildmode=plugin -o=ethereum.so`.
 
+* *NOTE*: As of 2017.07.17 Plugins in Go only works in Linux.
+
 ## Installing
 Move `ethereum.so` to `$IPFS_PATH/plugins/ethereum.so` and set it to be executable:
 

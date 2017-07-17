@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"io"
 
-	block "github.com/ipfs/go-block-format"
+	block "gx/ipfs/QmVA4mafxbfH5aEvNz8fyoxC6J1xhAtw88B4GerPznSZBg/go-block-format"
+	node "gx/ipfs/QmYNyRZJBUYPNrLszFmrBrPJbsBh2vMsefz5gnDpB5M1P6/go-ipld-format"
+
 	"github.com/ipfs/go-ipfs/core/coredag"
 	plugin "github.com/ipfs/go-ipfs/plugin"
 	eth "github.com/ipfs/go-ipld-eth"
-
-	node "github.com/ipfs/go-ipld-format"
 )
 
 var Plugins = []plugin.Plugin{

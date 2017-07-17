@@ -1,8 +1,8 @@
 package ipldeth
 
 import (
-	cid "github.com/ipfs/go-cid"
-	mh "github.com/multiformats/go-multihash"
+	cid "gx/ipfs/QmTprEaAA2A9bst5XH7exuyi5KzNMK3SEDNN8rBDnKWcUS/go-cid"
+	mh "gx/ipfs/QmU9a9NV9RdPNwZQDYd5uKsm6N6LJLSvLbywDDYFbaaC6P/go-multihash"
 
 	common "github.com/ethereum/go-ethereum/common"
 )
