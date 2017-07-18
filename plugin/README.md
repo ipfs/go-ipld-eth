@@ -17,6 +17,14 @@ mv ethereum.so ~/.ipfs/plugins/
 chmod +x ~/.ipfs/plugins/ethereum.so
 ```
 
+## I don't have linux but I want to do this somehow!
+
+As stated above, the _plugin_ library only works in Linux. Bug the go team to support your system.
+
+... Or use a linux virtualbox, and mount this directory.
+
+... Or hack your way via docker-fu [with this short, unsupported guide](docker.md)
+
 ## Usage
 
 Make sure you have the right version of ipfs installed (plugin support was
