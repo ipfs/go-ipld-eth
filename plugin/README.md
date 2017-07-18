@@ -23,7 +23,9 @@ As stated above, the _plugin_ library only works in Linux. Bug the go team to su
 
 ... Or use a linux virtualbox, and mount this directory.
 
-... Or hack your way via docker-fu [with this short, unsupported guide](docker.md)
+... Or hack your way via docker-fu [with this short, unsupported guide](hacks/docker.md)
+
+... Or, if you are in OSX, [use this handy script](hacks/osx.sh)
 
 ## Usage
 
