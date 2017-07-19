@@ -29,7 +29,7 @@ func (ep *EthereumPlugin) Name() string {
 }
 
 func (ep *EthereumPlugin) Version() string {
-	return "0.0.1"
+	return "0.0.2"
 }
 
 func (ep *EthereumPlugin) RegisterBlockDecoders(dec node.BlockDecoder) error {
