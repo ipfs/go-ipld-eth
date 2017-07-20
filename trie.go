@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strconv"
 
-	//common "github.com/ethereum/go-ethereum/common"
 	types "github.com/ethereum/go-ethereum/core/types"
 	rlp "github.com/ethereum/go-ethereum/rlp"
 
@@ -15,12 +14,14 @@ import (
 	node "gx/ipfs/QmYNyRZJBUYPNrLszFmrBrPJbsBh2vMsefz5gnDpB5M1P6/go-ipld-format"
 )
 
+// TrieNode represents a generic ethereum trie object
 type TrieNode struct {
 	codec uint64
 	Arr   []interface{}
 	val   []byte
 }
 
+// NewTrieNode returns a formatted trie node from a raw dump
 func NewTrieNode(data []byte) (node.Node, error) {
 	if bytes.Equal(data, []byte{0x80}) {
 		return &TrieNode{val: []byte{0x80}, codec: MEthTxTrie}, nil
@@ -76,34 +77,39 @@ func NewTrieNode(data []byte) (node.Node, error) {
 	}
 }
 
-func (b *TrieNode) Cid() *cid.Cid {
+// Cid returns the content identifier of the trie
+func (tn *TrieNode) Cid() *cid.Cid {
 	c, err := cid.Prefix{
-		Codec:    b.codec,
+		Codec:    tn.codec,
 		Version:  1,
 		MhType:   mh.KECCAK_256,
 		MhLength: -1,
-	}.Sum(b.RawData())
+	}.Sum(tn.RawData())
 	if err != nil {
 		panic(err)
 	}
 	return c
 }
 
+// HexHash returns the hex hash of the trie
 func (tn *TrieNode) HexHash() string {
 	return fmt.Sprintf("%x", tn.Cid().Bytes()[4:])
 }
 
-func (b *TrieNode) MarshalJSON() ([]byte, error) {
-	return json.Marshal(b.Arr)
+// MarshalJSON processes the trie node into readable JSON format.
+func (tn *TrieNode) MarshalJSON() ([]byte, error) {
+	return json.Marshal(tn.Arr)
 }
 
-func (b *TrieNode) Copy() node.Node {
+// Copy is NOT IMPLEMENTED YET
+func (tn *TrieNode) Copy() node.Node {
 	panic("dont use this yet")
 }
 
-func (b *TrieNode) Links() []*node.Link {
+// Links is a helper function that returns all links within this object
+func (tn *TrieNode) Links() []*node.Link {
 	var out []*node.Link
-	for _, i := range b.Arr {
+	for _, i := range tn.Arr {
 		c, ok := i.(*cid.Cid)
 		if ok {
 			out = append(out, &node.Link{Cid: c})
@@ -112,19 +118,25 @@ func (b *TrieNode) Links() []*node.Link {
 	return out
 }
 
-func (b *TrieNode) Loggable() map[string]interface{} {
+// Loggable returns in a map the type of IPLD Link.
+func (tn *TrieNode) Loggable() map[string]interface{} {
+	// TODO
+	// Should change the value based on the codec?
 	return map[string]interface{}{
-		"type": "ethereum_block",
+		"type": "ethereum_trie",
 	}
 }
 
-func (b *TrieNode) RawData() []byte {
-	return b.val
+// RawData returns the raw data of the trie node
+func (tn *TrieNode) RawData() []byte {
+	return tn.val
 }
 
-func (b *TrieNode) Resolve(p []string) (interface{}, []string, error) {
+// Resolve resolves a path through this node, stopping at any link boundary
+// and returning the object found as well as the remaining path to traverse
+func (tn *TrieNode) Resolve(p []string) (interface{}, []string, error) {
 	if len(p) == 0 {
-		return b, nil, nil
+		return tn, nil, nil
 	}
 
 	i, err := strconv.Atoi(p[0])
@@ -132,11 +144,11 @@ func (b *TrieNode) Resolve(p []string) (interface{}, []string, error) {
 		return nil, nil, fmt.Errorf("expected array index to trie: %s", err)
 	}
 
-	if i < 0 || i >= len(b.Arr) {
+	if i < 0 || i >= len(tn.Arr) {
 		return nil, nil, fmt.Errorf("index in trie out of range")
 	}
 
-	switch obj := b.Arr[i].(type) {
+	switch obj := tn.Arr[i].(type) {
 	case *cid.Cid:
 		return &node.Link{Cid: obj}, p[1:], nil
 	case *Tx:
@@ -147,8 +159,10 @@ func (b *TrieNode) Resolve(p []string) (interface{}, []string, error) {
 
 }
 
-func (b *TrieNode) ResolveLink(p []string) (*node.Link, []string, error) {
-	obj, rest, err := b.Resolve(p)
+// ResolveLink is a helper function that calls resolve and asserts the
+// output is a link
+func (tn *TrieNode) ResolveLink(p []string) (*node.Link, []string, error) {
+	obj, rest, err := tn.Resolve(p)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -161,19 +175,24 @@ func (b *TrieNode) ResolveLink(p []string) (*node.Link, []string, error) {
 	return lnk, rest, nil
 }
 
-func (b *TrieNode) Size() (uint64, error) {
+// Size returns the size in bytes of the serialized object
+func (tn *TrieNode) Size() (uint64, error) {
 	panic("don't do size")
 }
 
-func (b *TrieNode) Stat() (*node.NodeStat, error) {
+// Stat helps this struct to comply with the Node interface
+func (tn *TrieNode) Stat() (*node.NodeStat, error) {
 	return &node.NodeStat{}, nil
 }
 
-func (b *TrieNode) String() string {
-	return fmt.Sprintf("<EthereumTrieNode %s>", b.Cid())
+// String is a helper for output
+func (tn *TrieNode) String() string {
+	return fmt.Sprintf("<EthereumTrieNode %s>", tn.Cid())
 }
 
-func (b *TrieNode) Tree(p string, depth int) []string {
+// Tree lists all paths within the object under 'path', and up to the given depth.
+// To list the entire object (similar to `find .`) pass "" and -1
+func (tn *TrieNode) Tree(p string, depth int) []string {
 	if p != "" {
 		return nil
 	}
@@ -181,9 +200,9 @@ func (b *TrieNode) Tree(p string, depth int) []string {
 		return nil
 	}
 
-	if len(b.Arr) == 17 {
+	if len(tn.Arr) == 17 {
 		var out []string
-		for i, v := range b.Arr {
+		for i, v := range tn.Arr {
 			if len(v.([]byte)) == 0 {
 				out = append(out, fmt.Sprintf("%x", i))
 			}
