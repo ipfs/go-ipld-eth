@@ -1,5 +1,6 @@
 package ipldeth
 
+// IPLD Codecs for Ethereum
 const (
 	MEthBlock           = 0x90
 	MEthBlockList       = 0x91

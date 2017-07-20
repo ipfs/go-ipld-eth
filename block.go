@@ -16,11 +16,12 @@ import (
 	trie "github.com/ethereum/go-ethereum/trie"
 )
 
-// EthBlock will be renamed to EthHeader and refactorized, as per
+// EthBlock will be refactorized, as per
 // https://github.com/paritytech/parity/issues/4172#issue-200744099
 // https://github.com/MetaMask/metamask-extension/issues/719#issuecomment-267457567
 // https://github.com/ipld/js-ipld-eth-star/blob/master/eth-block/index.js
-// eth-block (code 0x90), represents the block header
+//
+// EthBlock (eth-block, codec 0x90), represents the block header
 // TODO
 // Activity to be performed after completing the first `golint`
 type EthBlock struct {
