@@ -5,11 +5,11 @@ import (
 	"io"
 
 	block "github.com/ipfs/go-block-format"
+	node "github.com/ipfs/go-ipld-format"
+
 	"github.com/ipfs/go-ipfs/core/coredag"
 	plugin "github.com/ipfs/go-ipfs/plugin"
 	eth "github.com/ipfs/go-ipld-eth"
-
-	node "github.com/ipfs/go-ipld-format"
 )
 
 var Plugins = []plugin.Plugin{
@@ -29,7 +29,7 @@ func (ep *EthereumPlugin) Name() string {
 }
 
 func (ep *EthereumPlugin) Version() string {
-	return "0.0.1"
+	return "0.0.2"
 }
 
 func (ep *EthereumPlugin) RegisterBlockDecoders(dec node.BlockDecoder) error {

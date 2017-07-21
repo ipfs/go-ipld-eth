@@ -1,8 +1,10 @@
 package ipldeth
 
 import (
+	"bytes"
 	"encoding/hex"
 	"fmt"
+	"os"
 	"testing"
 
 	//common "github.com/ethereum/go-ethereum/common"
@@ -39,6 +41,33 @@ func TestWeirdCase(t *testing.T) {
 	}
 
 	t.Log(tn.Links())
+}
+
+func TestHash(t *testing.T) {
+	fi, err := os.Open("test_data/eth-state-trie-root-4052365-0xa94ca535ef7f51d70728c15c7a292dc2fec7915949117166558eb012e2dda92d")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer fi.Close()
+
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(fi)
+
+	tn, err := NewTrieNode(buf.Bytes())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cid := tn.Cid()
+	if cid.String() != "z45oqTS5yKSHRBwfqEPFFd63Dugf6QxreYc8h7MF3CpxCpFhkFv" {
+		t.Fatal("Wrong calculated cid: %v", cid)
+	}
+
+	hash := tn.(*TrieNode).Hash()
+	if hash != "a94ca535ef7f51d70728c15c7a292dc2fec7915949117166558eb012e2dda92d" {
+		t.Fatal("Expected hashes to match")
+	}
+
 }
 
 func incrParse(data []byte) {

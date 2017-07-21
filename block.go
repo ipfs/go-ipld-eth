@@ -16,22 +16,22 @@ import (
 	trie "github.com/ethereum/go-ethereum/trie"
 )
 
-const (
-	MEthBlock           = 0x90
-	MEthBlockList       = 0x91
-	MEthTxTrie          = 0x92
-	MEthTx              = 0x93
-	MEthTxReceiptTrie   = 0x94
-	MEthTxReceipt       = 0x95
-	MEthStateTrie       = 0x96
-	MEthAccountSnapshot = 0x97
-	MEthStorageTrie     = 0x98
-)
-
+// EthBlock will be refactorized, as per
+// https://github.com/paritytech/parity/issues/4172#issue-200744099
+// https://github.com/MetaMask/metamask-extension/issues/719#issuecomment-267457567
+// https://github.com/ipld/js-ipld-eth-star/blob/master/eth-block/index.js
+//
+// EthBlock (eth-block, codec 0x90), represents the block header
+// TODO
+// Activity to be performed after completing the first `golint`
 type EthBlock struct {
 	header *types.Header
 }
 
+// FromRlpBlockMessage takes an RLP message emitted by the BlockByHash ws API
+// in go ethereum, and decodes it to return the block header, tx, tx-tries and ommers.
+// TODO
+// Refactor to block header to comply with eth-block (0x90)
 func FromRlpBlockMessage(r io.Reader) (*EthBlock, []*Tx, []*TrieNode, []*EthBlock, error) {
 	var b types.Block
 	s := rlp.NewStream(r, 0)
@@ -129,6 +129,7 @@ func buildTreeFromTxs(txs []*Tx) ([]*TrieNode, error) {
 	return out, nil
 }
 
+// DecodeBlock takes raw binary data and returns a block header for further processing.
 func DecodeBlock(r io.Reader) (*EthBlock, error) {
 	var h types.Header
 	err := rlp.Decode(r, &h)
@@ -141,6 +142,7 @@ func DecodeBlock(r io.Reader) (*EthBlock, error) {
 
 var _ node.Node = (*EthBlock)(nil)
 
+// MarshalJSON processes the block header into readable JSON format.
 func (b *EthBlock) MarshalJSON() ([]byte, error) {
 	out := map[string]interface{}{
 		"time":       b.header.Time,
@@ -162,6 +164,7 @@ func (b *EthBlock) MarshalJSON() ([]byte, error) {
 	return json.Marshal(out)
 }
 
+// Cid returns the cid of the block header.
 func (b *EthBlock) Cid() *cid.Cid {
 	c, err := cid.Prefix{
 		Codec:    MEthBlock,
@@ -175,18 +178,17 @@ func (b *EthBlock) Cid() *cid.Cid {
 	return c
 }
 
+// Parent returns the cid of the parent of the block.
 func (b *EthBlock) Parent() *cid.Cid {
 	return toCid(MEthBlock, b.header.ParentHash.Bytes())
 }
 
+// Tx returns the cid of the transactionsTrie root of the block.
 func (b *EthBlock) Tx() *cid.Cid {
 	return castCommonHash(b.header.TxHash, MEthTxTrie)
 }
 
-func (b *EthBlock) Copy() node.Node {
-	panic("dont use this yet")
-}
-
+// Links is a helper function that returns all links within this object
 func (b *EthBlock) Links() []*node.Link {
 	return []*node.Link{
 		&node.Link{Cid: castCommonHash(b.header.ParentHash, MEthBlock)},
@@ -197,12 +199,14 @@ func (b *EthBlock) Links() []*node.Link {
 	}
 }
 
+// Loggable returns in a map the type of IPLD Link.
 func (b *EthBlock) Loggable() map[string]interface{} {
 	return map[string]interface{}{
 		"type": "ethereum_block",
 	}
 }
 
+// RawData returns the binary of the RLP encode of the block header.
 func (b *EthBlock) RawData() []byte {
 	buf := new(bytes.Buffer)
 	if err := rlp.Encode(buf, b.header); err != nil {
@@ -212,6 +216,8 @@ func (b *EthBlock) RawData() []byte {
 	return buf.Bytes()
 }
 
+// Resolve resolves a path through this node, stopping at any link boundary
+// and returning the object found as well as the remaining path to traverse
 func (b *EthBlock) Resolve(p []string) (interface{}, []string, error) {
 	if len(p) == 0 {
 		return b, nil, nil
@@ -236,6 +242,8 @@ func toCid(ctype uint64, h []byte) *cid.Cid {
 	return cid.NewCidV1(ctype, mh.Multihash(buf))
 }
 
+// ResolveLink is a helper function that calls resolve and asserts the
+// output is a link
 func (b *EthBlock) ResolveLink(p []string) (*node.Link, []string, error) {
 	obj, rest, err := b.Resolve(p)
 	if err != nil {
@@ -249,19 +257,31 @@ func (b *EthBlock) ResolveLink(p []string) (*node.Link, []string, error) {
 	return nil, nil, fmt.Errorf("resolved item was not a link")
 }
 
+// String is a helper for output
+func (b *EthBlock) String() string {
+	return fmt.Sprintf("<EthBlock %s>", b.Cid())
+}
+
+// Tree lists all paths within the object under 'path', and up to the given depth.
+// To list the entire object (similar to `find .`) pass "" and -1
+// TODO
+// Implement
+func (b *EthBlock) Tree(p string, depth int) []string {
+	return nil
+}
+
+// Copy will go away. It is here to comply with the interface.
+func (b *EthBlock) Copy() node.Node {
+	panic("dont use this yet")
+}
+
+// Size will go away. It is here to comply with the interface.
 func (b *EthBlock) Size() (uint64, error) {
 	// TODO:
 	return 0, nil
 }
 
+// Stat will go away. It is here to comply with the interface.
 func (b *EthBlock) Stat() (*node.NodeStat, error) {
 	return &node.NodeStat{}, nil
-}
-
-func (b *EthBlock) String() string {
-	return fmt.Sprintf("<EthBlock %s>", b.Cid())
-}
-
-func (b *EthBlock) Tree(p string, depth int) []string {
-	return nil
 }
