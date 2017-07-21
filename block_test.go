@@ -21,7 +21,6 @@ func TestBlockParsing(t *testing.T) {
 	c := blk.Cid()
 
 	_ = c
-	// f_ = cmt.Println(c)
 	exp := "8c03e3af302c800b4ef1b96d48c5dd23c9410a9e858df5a1e82cdfa5a71895bf"
 	hval, err := hex.DecodeString(exp)
 	if err != nil {
@@ -65,5 +64,4 @@ func TestBlockWithOddTransactions(t *testing.T) {
 	}
 
 	_ = blk
-	// fmt.Printf("%x\n", blk.Tx().Bytes())
 }
