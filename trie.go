@@ -24,7 +24,9 @@ type TrieNode struct {
 // NewTrieNode returns a formatted trie node from a raw dump
 func NewTrieNode(data []byte) (node.Node, error) {
 	if bytes.Equal(data, []byte{0x80}) {
-		return &TrieNode{val: []byte{0x80}, codec: MEthTxTrie}, nil
+		// TODO
+		// Make the codec variable here
+		return &TrieNode{val: []byte{0x80}, codec: MEthStateTrie}, nil
 	}
 
 	var i []interface{}
@@ -41,7 +43,9 @@ func NewTrieNode(data []byte) (node.Node, error) {
 
 		var val interface{}
 		if len(valb) == 32 {
-			val = toCid(MEthTxTrie, valb)
+			// TODO
+			// Make the codec variable here
+			val = toCid(MEthStateTrie, valb)
 		} else {
 			var t types.Transaction
 			if err := rlp.DecodeBytes(i[1].([]byte), &t); err != nil {
@@ -49,10 +53,12 @@ func NewTrieNode(data []byte) (node.Node, error) {
 			}
 			val = &Tx{&t}
 		}
+		// TODO
+		// Make the codec variable here
 		return &TrieNode{
 			Arr:   []interface{}{key, val},
 			val:   data,
-			codec: MEthTxTrie,
+			codec: MEthStateTrie,
 		}, nil
 	case 17:
 		var parsed []interface{}
@@ -62,15 +68,19 @@ func NewTrieNode(data []byte) (node.Node, error) {
 			case 0:
 				parsed = append(parsed, nil)
 			case 32:
-				parsed = append(parsed, toCid(MEthTxTrie, bv))
+				// TODO
+				// Make the codec variable here
+				parsed = append(parsed, toCid(MEthStateTrie, bv))
 			default:
 				return nil, fmt.Errorf("unrecognized object in trie: %v", bv)
 			}
 		}
+		// TODO
+		// Make the codec variable here
 		return &TrieNode{
 			Arr:   parsed,
 			val:   data,
-			codec: MEthTxTrie,
+			codec: MEthStateTrie,
 		}, nil
 	default:
 		return nil, fmt.Errorf("unknown trie node type")
@@ -91,9 +101,9 @@ func (tn *TrieNode) Cid() *cid.Cid {
 	return c
 }
 
-// HexHash returns the hex hash of the trie
-func (tn *TrieNode) HexHash() string {
-	return fmt.Sprintf("%x", tn.Cid().Bytes()[4:])
+// Hash returns the ethereum keccak-256 hash of the trie node
+func (tn *TrieNode) Hash() string {
+	return fmt.Sprintf("%x", tn.Cid().Bytes()[5:])
 }
 
 // MarshalJSON processes the trie node into readable JSON format.
@@ -116,7 +126,7 @@ func (tn *TrieNode) Links() []*node.Link {
 // Loggable returns in a map the type of IPLD Link.
 func (tn *TrieNode) Loggable() map[string]interface{} {
 	// TODO
-	// Should change the value based on the codec?
+	// Should change the value based on the codec
 	return map[string]interface{}{
 		"type": "ethereum_trie",
 	}
