@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"io"
 
-	block "gx/ipfs/QmVA4mafxbfH5aEvNz8fyoxC6J1xhAtw88B4GerPznSZBg/go-block-format"
-	node "gx/ipfs/QmYNyRZJBUYPNrLszFmrBrPJbsBh2vMsefz5gnDpB5M1P6/go-ipld-format"
+	block "github.com/ipfs/go-block-format"
+	node "github.com/ipfs/go-ipld-format"
 
 	"github.com/ipfs/go-ipfs/core/coredag"
 	plugin "github.com/ipfs/go-ipfs/plugin"
