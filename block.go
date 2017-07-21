@@ -164,7 +164,7 @@ func (b *EthBlock) MarshalJSON() ([]byte, error) {
 	return json.Marshal(out)
 }
 
-// Cid returns the content identifier of the block header.
+// Cid returns the cid of the block header.
 func (b *EthBlock) Cid() *cid.Cid {
 	c, err := cid.Prefix{
 		Codec:    MEthBlock,

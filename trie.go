@@ -77,7 +77,7 @@ func NewTrieNode(data []byte) (node.Node, error) {
 	}
 }
 
-// Cid returns the content identifier of the trie
+// Cid returns the cid of the trie
 func (tn *TrieNode) Cid() *cid.Cid {
 	c, err := cid.Prefix{
 		Codec:    tn.codec,

@@ -17,7 +17,7 @@ type Tx struct {
 	tx *types.Transaction
 }
 
-// Cid returns the content identifier of the transaction.
+// Cid returns the cid of the transaction.
 func (t *Tx) Cid() *cid.Cid {
 	c, err := cid.Prefix{
 		Codec:    MEthTx,
