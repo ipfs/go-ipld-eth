@@ -178,12 +178,12 @@ func (b *EthBlock) Cid() *cid.Cid {
 	return c
 }
 
-// Parent returns the content identifier of the parent of the block.
+// Parent returns the cid of the parent of the block.
 func (b *EthBlock) Parent() *cid.Cid {
 	return toCid(MEthBlock, b.header.ParentHash.Bytes())
 }
 
-// Tx returns the content identifier of the transactionsTrie root of the block.
+// Tx returns the cid of the transactionsTrie root of the block.
 func (b *EthBlock) Tx() *cid.Cid {
 	return castCommonHash(b.header.TxHash, MEthTxTrie)
 }
