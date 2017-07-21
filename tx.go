@@ -46,11 +46,6 @@ func (t *Tx) MarshalJSON() ([]byte, error) {
 	return t.tx.MarshalJSON()
 }
 
-// Copy is NOT IMPLEMENTED YET
-func (t *Tx) Copy() node.Node {
-	panic("dont use this yet")
-}
-
 // Links is a helper function that returns all links within this object
 func (t *Tx) Links() []*node.Link {
 	return nil
@@ -113,16 +108,6 @@ func (t *Tx) ResolveLink(p []string) (*node.Link, []string, error) {
 	return lnk, rest, nil
 }
 
-// Size returns the size in bytes of the serialized object
-func (t *Tx) Size() (uint64, error) {
-	return uint64(t.tx.Size().Int64()), nil
-}
-
-// Stat helps this struct to comply with the Node interface
-func (t *Tx) Stat() (*node.NodeStat, error) {
-	return &node.NodeStat{}, nil
-}
-
 // String is a helper for output
 func (t *Tx) String() string {
 	return fmt.Sprintf("<EthereumTx %s>", t.Cid())
@@ -137,4 +122,19 @@ func (t *Tx) Tree(p string, depth int) []string {
 // BaseTx returns a go-ethereum/types.Transaction pointer to the object
 func (t *Tx) BaseTx() *types.Transaction {
 	return t.tx
+}
+
+// Copy will go away. It is here to comply with the interface.
+func (t *Tx) Copy() node.Node {
+	panic("dont use this yet")
+}
+
+// Size will go away. It is here to comply with the interface.
+func (t *Tx) Size() (uint64, error) {
+	return uint64(t.tx.Size().Int64()), nil
+}
+
+// Stat will go away. It is here to comply with the interface.
+func (t *Tx) Stat() (*node.NodeStat, error) {
+	return &node.NodeStat{}, nil
 }

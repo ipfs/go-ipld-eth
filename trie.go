@@ -101,11 +101,6 @@ func (tn *TrieNode) MarshalJSON() ([]byte, error) {
 	return json.Marshal(tn.Arr)
 }
 
-// Copy is NOT IMPLEMENTED YET
-func (tn *TrieNode) Copy() node.Node {
-	panic("dont use this yet")
-}
-
 // Links is a helper function that returns all links within this object
 func (tn *TrieNode) Links() []*node.Link {
 	var out []*node.Link
@@ -175,16 +170,6 @@ func (tn *TrieNode) ResolveLink(p []string) (*node.Link, []string, error) {
 	return lnk, rest, nil
 }
 
-// Size returns the size in bytes of the serialized object
-func (tn *TrieNode) Size() (uint64, error) {
-	panic("don't do size")
-}
-
-// Stat helps this struct to comply with the Node interface
-func (tn *TrieNode) Stat() (*node.NodeStat, error) {
-	return &node.NodeStat{}, nil
-}
-
 // String is a helper for output
 func (tn *TrieNode) String() string {
 	return fmt.Sprintf("<EthereumTrieNode %s>", tn.Cid())
@@ -212,4 +197,20 @@ func (tn *TrieNode) Tree(p string, depth int) []string {
 
 	// TODO: not sure what to put here. Most of the 'keys' dont seem to be human readable
 	return []string{"VALUE NODE"}
+
+}
+
+// Copy will go away. It is here to comply with the interface.
+func (tn *TrieNode) Copy() node.Node {
+	panic("dont use this yet")
+}
+
+// Size will go away. It is here to comply with the interface.
+func (tn *TrieNode) Size() (uint64, error) {
+	panic("don't do size")
+}
+
+// Stat will go away. It is here to comply with the interface.
+func (tn *TrieNode) Stat() (*node.NodeStat, error) {
+	return &node.NodeStat{}, nil
 }

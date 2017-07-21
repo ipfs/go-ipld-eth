@@ -188,14 +188,6 @@ func (b *EthBlock) Tx() *cid.Cid {
 	return castCommonHash(b.header.TxHash, MEthTxTrie)
 }
 
-// Copy is NOT IMPLEMENTED YET
-// Should return a deep copy of this node.
-// TODO
-// TBD how deep we want to copy this node.
-func (b *EthBlock) Copy() node.Node {
-	panic("dont use this yet")
-}
-
 // Links is a helper function that returns all links within this object
 func (b *EthBlock) Links() []*node.Link {
 	return []*node.Link{
@@ -265,18 +257,6 @@ func (b *EthBlock) ResolveLink(p []string) (*node.Link, []string, error) {
 	return nil, nil, fmt.Errorf("resolved item was not a link")
 }
 
-// Size returns the size in bytes of the serialized object
-func (b *EthBlock) Size() (uint64, error) {
-	// TODO:
-	return 0, nil
-}
-
-// Stat helps this struct to comply with the Node interface
-// TODO: not sure if stat deserves to stay
-func (b *EthBlock) Stat() (*node.NodeStat, error) {
-	return &node.NodeStat{}, nil
-}
-
 // String is a helper for output
 func (b *EthBlock) String() string {
 	return fmt.Sprintf("<EthBlock %s>", b.Cid())
@@ -288,4 +268,20 @@ func (b *EthBlock) String() string {
 // Implement
 func (b *EthBlock) Tree(p string, depth int) []string {
 	return nil
+}
+
+// Copy will go away. It is here to comply with the interface.
+func (b *EthBlock) Copy() node.Node {
+	panic("dont use this yet")
+}
+
+// Size will go away. It is here to comply with the interface.
+func (b *EthBlock) Size() (uint64, error) {
+	// TODO:
+	return 0, nil
+}
+
+// Stat will go away. It is here to comply with the interface.
+func (b *EthBlock) Stat() (*node.NodeStat, error) {
+	return &node.NodeStat{}, nil
 }
