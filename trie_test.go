@@ -1,17 +1,8 @@
 package ipldeth
 
-import (
-	"bytes"
-	"encoding/hex"
-	"fmt"
-	"os"
-	"testing"
+//common "github.com/ethereum/go-ethereum/common"
 
-	//common "github.com/ethereum/go-ethereum/common"
-
-	rlp "github.com/ethereum/go-ethereum/rlp"
-)
-
+/*
 func TestTrieParsing(t *testing.T) {
 	v := "f874822080b86ff86d078504a817c80083015f90943d4a3fdbb4ffae950a069ac7319f157bbaaa010e8810a741a462780000801ca05b7175be69fccc145074194c187e4ad3e13f2b50a13042efa7b55f8346305f05a02d008fff5b7169f4aaa85a405359e4ce023cd9fd52c87a0492a1359aaebfce68"
 
@@ -44,7 +35,7 @@ func TestWeirdCase(t *testing.T) {
 }
 
 func TestHash(t *testing.T) {
-	fi, err := os.Open("test_data/eth-state-trie-root-4052365-0xa94ca535ef7f51d70728c15c7a292dc2fec7915949117166558eb012e2dda92d")
+	fi, err := os.Open("test_data/eth-state-trie-root-4052365-0xa94ca535")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,3 +89,4 @@ func incrParse(data []byte) {
 		incrParse(rest)
 	}
 }
+*/

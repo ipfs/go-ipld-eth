@@ -45,7 +45,7 @@ func NewTrieNode(data []byte) (node.Node, error) {
 		if len(valb) == 32 {
 			// TODO
 			// Make the codec variable here
-			val = toCid(MEthStateTrie, valb)
+			val = byteToCid(MEthStateTrie, valb)
 		} else {
 			var t types.Transaction
 			if err := rlp.DecodeBytes(i[1].([]byte), &t); err != nil {
@@ -70,7 +70,7 @@ func NewTrieNode(data []byte) (node.Node, error) {
 			case 32:
 				// TODO
 				// Make the codec variable here
-				parsed = append(parsed, toCid(MEthStateTrie, bv))
+				parsed = append(parsed, byteToCid(MEthStateTrie, bv))
 			default:
 				return nil, fmt.Errorf("unrecognized object in trie: %v", bv)
 			}

@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 
 	cid "github.com/ipfs/go-cid"
 	node "github.com/ipfs/go-ipld-format"
-	mh "github.com/multiformats/go-multihash"
 
 	types "github.com/ethereum/go-ethereum/core/types"
 	rlp "github.com/ethereum/go-ethereum/rlp"
@@ -18,7 +18,20 @@ import (
 type EthBlock struct {
 	*types.Header
 
-	cid *cid.Cid
+	cid     *cid.Cid
+	rawdata []byte
+}
+
+// Objects to parse info from responses of the ethereum clients JSON APIs
+type objClientJsonApiResponse struct {
+	Result objClientJsonApiResult `json:"result"`
+}
+
+type objClientJsonApiResult struct {
+	types.Header
+
+	// TODO
+	// Add uncles and transactions
 }
 
 // Static (compile time) check that EthBlock satisfies the node.Node interface.
@@ -28,38 +41,80 @@ var _ node.Node = (*EthBlock)(nil)
   INPUT
 */
 
-// FromBlockHeaderRLP takes an RLP message representing an ethereum block header,
-// parses it, calculate its cid, and wraps it into the EthBlock struct for further processing.
-func FromBlockHeaderRLP(r io.Reader) (*EthBlock, error) {
-	ethBlock := &EthBlock{}
-
-	// We will read this buffer twice
-	var r1 bytes.Buffer
-	r0 := io.TeeReader(r, &r1)
-
-	// Parse the RLP into a geth types.Header object
-	var h types.Header
-	s := rlp.NewStream(r0, 0)
-
-	err := s.Decode(&h)
+// FromBlockRLP takes an RLP message representing
+// an ethereum block header or body (header, uncles and txs)
+// to return it as an slice of IPLD nodes for further processing.
+func FromBlockRLP(r io.Reader) (*EthBlock, error) {
+	// We may want to use this stream several times
+	rawdata, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
 
-	ethBlock.Header = &h
-
-	// Now, let's create the cid
-	c, err := cid.Prefix{
-		Codec:    MEthBlock,
-		Version:  1,
-		MhType:   mh.KECCAK_256,
-		MhLength: -1,
-	}.Sum(r1.Bytes())
+	// Let's try to decode the received element as a block body
+	var decodedBlock types.Block
+	err = rlp.Decode(bytes.NewBuffer(rawdata), &decodedBlock)
 	if err != nil {
-		panic(err)
+		if err.Error()[:41] != "rlp: expected input list for types.Header" {
+			return nil, err
+		}
+
+		// Maybe it is just a header... (body sans uncles and txs)
+		var decodedHeader types.Header
+		err := rlp.Decode(bytes.NewBuffer(rawdata), &decodedHeader)
+		if err != nil {
+			return nil, err
+		}
+
+		// It was a header
+		return &EthBlock{
+			Header:  &decodedHeader,
+			cid:     rawdataToCid(MEthBlock, rawdata),
+			rawdata: rawdata,
+		}, nil
 	}
 
-	ethBlock.cid = c
+	// This is a block body (header + uncles + txs)
+	// We'll extract the header bits here
+	headerRawData := getRLP(decodedBlock.Header())
+	ethBlock := &EthBlock{
+		Header:  decodedBlock.Header(),
+		cid:     rawdataToCid(MEthBlock, headerRawData),
+		rawdata: headerRawData,
+	}
+
+	// Let's process eth-block-list, eth-tx and eth-tx-trie from here
+
+	// eth-block-list (Ommers)
+	/*
+		var uncles []*EthBlock
+		for _, u := range b.Uncles() {
+			uncles = append(uncles, &EthBlock{u})
+		}
+	*/
+
+	return ethBlock, nil
+}
+
+// FromBlockJSON takes the output of an ethereum client JSON API
+// (i.e. parity or geth) and returns a slice of IPLD nodes.
+func FromBlockJSON(r io.Reader) (*EthBlock, error) {
+	var obj objClientJsonApiResponse
+	dec := json.NewDecoder(r)
+	err := dec.Decode(&obj)
+	if err != nil {
+		return nil, err
+	}
+
+	headerRawData := getRLP(&obj.Result.Header)
+	ethBlock := &EthBlock{
+		Header:  &obj.Result.Header,
+		cid:     rawdataToCid(MEthBlock, headerRawData),
+		rawdata: headerRawData,
+	}
+
+	// TODO
+	// Process eth-block-list, eth-tx and eth-tx-trie
 
 	return ethBlock, nil
 }
@@ -68,38 +123,29 @@ func FromBlockHeaderRLP(r io.Reader) (*EthBlock, error) {
   OUTPUT
 */
 
-// DecodeBlock takes raw binary data from IPFS and returns
+// DecodeBlockHeader takes raw binary data from IPFS and returns
 // a block header for further processing.
-func DecodeBlock(r io.Reader) (*EthBlock, error) {
+func DecodeBlockHeader(c *cid.Cid, b []byte) (*EthBlock, error) {
 	var h types.Header
-	err := rlp.Decode(r, &h)
+	err := rlp.Decode(bytes.NewReader(b), &h)
 	if err != nil {
 		return nil, err
 	}
 
-	return &EthBlock{Header: &h}, nil
+	return &EthBlock{
+		Header:  &h,
+		cid:     c,
+		rawdata: b,
+	}, nil
 }
 
-// MarshalJSON processes the block header into readable JSON format.
-func (b *EthBlock) MarshalJSON() ([]byte, error) {
-	out := map[string]interface{}{
-		"time":       b.Time,
-		"bloom":      b.Bloom,
-		"coinbase":   b.Coinbase,
-		"difficulty": b.Difficulty,
-		"extra":      b.Extra,
-		"gaslimit":   b.GasLimit,
-		"gasused":    b.GasUsed,
-		"mixdigest":  b.MixDigest,
-		"nonce":      b.Nonce,
-		"number":     b.Number,
-		"parent":     castCommonHash(b.ParentHash, MEthBlock),
-		"receipts":   castCommonHash(b.ReceiptHash, MEthTxReceiptTrie),
-		"root":       castCommonHash(b.Root, MEthStateTrie),
-		"tx":         castCommonHash(b.TxHash, MEthTxTrie),
-		"uncles":     castCommonHash(b.UncleHash, MEthBlockList),
-	}
-	return json.Marshal(out)
+/*
+  Block INTERFACE
+*/
+
+// RawData returns the binary of the RLP encode of the block header.
+func (b *EthBlock) RawData() []byte {
+	return b.rawdata
 }
 
 // Cid returns the cid of the block header.
@@ -107,43 +153,21 @@ func (b *EthBlock) Cid() *cid.Cid {
 	return b.cid
 }
 
-// Parent returns the cid of the parent of the block.
-func (b *EthBlock) Parent() *cid.Cid {
-	return toCid(MEthBlock, b.ParentHash.Bytes())
+// String is a helper for output
+func (b *EthBlock) String() string {
+	return fmt.Sprintf("<EthBlock %s>", b.Cid())
 }
 
-// Tx returns the cid of the transactionsTrie root of the block.
-func (b *EthBlock) Tx() *cid.Cid {
-	return castCommonHash(b.TxHash, MEthTxTrie)
-}
-
-// Links is a helper function that returns all links within this object
-func (b *EthBlock) Links() []*node.Link {
-	return []*node.Link{
-		&node.Link{Cid: castCommonHash(b.ParentHash, MEthBlock)},
-		&node.Link{Cid: castCommonHash(b.ReceiptHash, MEthTxReceiptTrie)},
-		&node.Link{Cid: castCommonHash(b.Root, MEthStateTrie)},
-		&node.Link{Cid: castCommonHash(b.TxHash, MEthTxTrie)},
-		&node.Link{Cid: castCommonHash(b.UncleHash, MEthBlockList)},
-	}
-}
-
-// Loggable returns in a map the type of IPLD Link.
+// Loggable returns a map the type of IPLD Link.
 func (b *EthBlock) Loggable() map[string]interface{} {
 	return map[string]interface{}{
-		"type": "eth_block",
+		"type": "eth-block",
 	}
 }
 
-// RawData returns the binary of the RLP encode of the block header.
-func (b *EthBlock) RawData() []byte {
-	buf := new(bytes.Buffer)
-	if err := rlp.Encode(buf, b); err != nil {
-		panic(err)
-	}
-
-	return buf.Bytes()
-}
+/*
+  Node INTERFACE
+*/
 
 // Resolve resolves a path through this node, stopping at any link boundary
 // and returning the object found as well as the remaining path to traverse
@@ -154,12 +178,18 @@ func (b *EthBlock) Resolve(p []string) (interface{}, []string, error) {
 
 	switch p[0] {
 	case "tx":
-		return &node.Link{Cid: toCid(MEthTxTrie, b.TxHash.Bytes())}, p[1:], nil
+		return &node.Link{Cid: castCommonHash(MEthTxTrie, b.TxHash)}, p[1:], nil
 	case "parent":
-		return &node.Link{Cid: toCid(MEthBlock, b.ParentHash.Bytes())}, p[1:], nil
+		return &node.Link{Cid: castCommonHash(MEthBlock, b.ParentHash)}, p[1:], nil
 	default:
 		return nil, nil, fmt.Errorf("no such link")
 	}
+}
+
+// Tree lists all paths within the object under 'path', and up to the given depth.
+// To list the entire object (similar to `find .`) pass "" and -1
+func (b *EthBlock) Tree(p string, depth int) []string {
+	return nil
 }
 
 // ResolveLink is a helper function that calls resolve and asserts the
@@ -177,41 +207,55 @@ func (b *EthBlock) ResolveLink(p []string) (*node.Link, []string, error) {
 	return nil, nil, fmt.Errorf("resolved item was not a link")
 }
 
-// Tree lists all paths within the object under 'path', and up to the given depth.
-// To list the entire object (similar to `find .`) pass "" and -1
-func (b *EthBlock) Tree(p string, depth int) []string {
-	return nil
-}
-
-func toCid(ctype uint64, h []byte) *cid.Cid {
-	buf, err := mh.Encode(h, mh.KECCAK_256)
-	if err != nil {
-		panic(err)
-	}
-
-	return cid.NewCidV1(ctype, mh.Multihash(buf))
-}
-
-// String is a helper for output
-func (b *EthBlock) String() string {
-	return fmt.Sprintf("<EthBlock %s>", b.Cid())
-}
-
-/*
-  GRAVEYARD
-*/
-
-// Copy will go away. It is here to comply with the interface.
+// Copy will go away. It is here to comply with the Node interface.
 func (b *EthBlock) Copy() node.Node {
 	panic("dont use this yet")
 }
 
-// Size will go away. It is here to comply with the interface.
+// Links is a helper function that returns all links within this object
+// HINT: Use `ipfs refs <cid>`
+func (b *EthBlock) Links() []*node.Link {
+	return []*node.Link{
+		&node.Link{Cid: castCommonHash(MEthBlock, b.ParentHash)},
+		&node.Link{Cid: castCommonHash(MEthTxReceiptTrie, b.ReceiptHash)},
+		&node.Link{Cid: castCommonHash(MEthStateTrie, b.Root)},
+		&node.Link{Cid: castCommonHash(MEthTxTrie, b.TxHash)},
+		&node.Link{Cid: castCommonHash(MEthBlockList, b.UncleHash)},
+	}
+}
+
+// Stat will go away. It is here to comply with the Node interface.
+func (b *EthBlock) Stat() (*node.NodeStat, error) {
+	return &node.NodeStat{}, nil
+}
+
+// Size will go away. It is here to comply with the Node interface.
 func (b *EthBlock) Size() (uint64, error) {
 	return 0, nil
 }
 
-// Stat will go away. It is here to comply with the interface.
-func (b *EthBlock) Stat() (*node.NodeStat, error) {
-	return &node.NodeStat{}, nil
+/*
+  EthBlock functions
+*/
+
+// MarshalJSON processes the block header into readable JSON format.
+func (b *EthBlock) MarshalJSON() ([]byte, error) {
+	out := map[string]interface{}{
+		"time":       b.Time,
+		"bloom":      b.Bloom,
+		"coinbase":   b.Coinbase,
+		"difficulty": b.Difficulty,
+		"extra":      b.Extra,
+		"gaslimit":   b.GasLimit,
+		"gasused":    b.GasUsed,
+		"mixdigest":  b.MixDigest,
+		"nonce":      b.Nonce,
+		"number":     b.Number,
+		"parent":     castCommonHash(MEthBlock, b.ParentHash),
+		"receipts":   castCommonHash(MEthTxReceiptTrie, b.ReceiptHash),
+		"root":       castCommonHash(MEthStateTrie, b.Root),
+		"tx":         castCommonHash(MEthTxTrie, b.TxHash),
+		"uncles":     castCommonHash(MEthBlockList, b.UncleHash),
+	}
+	return json.Marshal(out)
 }

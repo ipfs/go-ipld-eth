@@ -1,15 +1,13 @@
 package main
 
 import (
-	"bytes"
 	"io"
 
 	block "github.com/ipfs/go-block-format"
-	node "github.com/ipfs/go-ipld-format"
-
 	"github.com/ipfs/go-ipfs/core/coredag"
 	plugin "github.com/ipfs/go-ipfs/plugin"
 	eth "github.com/ipfs/go-ipld-eth"
+	node "github.com/ipfs/go-ipld-format"
 )
 
 // Plugins declare what and how many of these will be defined.
@@ -20,6 +18,7 @@ var Plugins = []plugin.Plugin{
 // EthereumPlugin is the main structure.
 type EthereumPlugin struct{}
 
+// Static (compile time) check that EthereumPlugin satisfies the plugin.PluginIPLD interface.
 var _ plugin.PluginIPLD = (*EthereumPlugin)(nil)
 
 // Init complies with the plugin.Plugin interface.
@@ -40,19 +39,33 @@ func (ep *EthereumPlugin) Version() string {
 }
 
 /*
-  INPUT
+  INPUT PARSERS
 */
 
-// RegisterInputEncParsers enters the encode parsers needed to put the blocks into IPLD.
+// RegisterInputEncParsers enters the encode parsers needed to put the blocks into the DAG.
 func (ep *EthereumPlugin) RegisterInputEncParsers(iec coredag.InputEncParsers) error {
-	iec.AddParser("raw", "eth-block", EthBlockInputParser)
+	iec.AddParser("raw", "eth-block", EthBlockRawInputParser)
+	iec.AddParser("json", "eth-block", EthBlockJSONInputParser)
 	return nil
 }
 
-// EthBlockInputParser will take the piped input,
-// an RLP binary of a block header, to return an IPLD node slice.
-func EthBlockInputParser(r io.Reader) ([]node.Node, error) {
-	blockHeader, err := eth.FromBlockHeaderRLP(r)
+// EthBlockRawInputParser will take the piped input, which could an RLP binary
+// of either an RLP block header, or an RLP body (header + uncles + txs)
+// to return an IPLD Node slice.
+func EthBlockRawInputParser(r io.Reader) ([]node.Node, error) {
+	blockHeader, err := eth.FromBlockRLP(r)
+	if err != nil {
+		return nil, err
+	}
+	var out []node.Node
+	out = append(out, blockHeader)
+	return out, nil
+}
+
+// EthBlockJSONInputParser will take the piped input, a JSON representation of
+// a block header or body (header + uncles + txs), to return an IPLD Node slice.
+func EthBlockJSONInputParser(r io.Reader) ([]node.Node, error) {
+	blockHeader, err := eth.FromBlockJSON(r)
 	if err != nil {
 		return nil, err
 	}
@@ -62,20 +75,23 @@ func EthBlockInputParser(r io.Reader) ([]node.Node, error) {
 }
 
 /*
-  OUTPUT
+  OUTPUT BLOCK DECODERS
 */
 
 // RegisterBlockDecoders enters which functions will help us to decode the requested IPLD blocks.
 func (ep *EthereumPlugin) RegisterBlockDecoders(dec node.BlockDecoder) error {
 	dec.Register(eth.MEthBlock, EthBlockParser) // eth-block
-	dec.Register(eth.MEthTx, EthTxParser)
-	dec.Register(eth.MEthTxTrie, EthTxTrieParser)
+	// TODO
+	// Let's deal with these two elements later
+	// We will do it anyways, during this very PR.
+	// dec.Register(eth.MEthTx, EthTxParser)
+	// dec.Register(eth.MEthTxTrie, EthTxTrieParser)
 	return nil
 }
 
 // EthBlockParser takes care of the eth-block IPLD objects (ethereum block headers)
 func EthBlockParser(b block.Block) (node.Node, error) {
-	return eth.DecodeBlock(bytes.NewReader(b.RawData()))
+	return eth.DecodeBlockHeader(b.Cid(), b.RawData())
 }
 
 // EthTxParser takes care of the eth-tx IPLD objects (ethereum transactions)

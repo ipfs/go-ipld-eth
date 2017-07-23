@@ -2,7 +2,8 @@
 
 ## `0.0.3`
   * Improve in-code docs for the plugin loader.
-  * Implement `eth-block` (codec `0x90`), as a representation of an ethereum block header.
+  * Work on the input:
+    * ---> (TODO)
 
 ## `0.0.2`
 
