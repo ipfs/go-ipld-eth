@@ -20,11 +20,11 @@ func TestBlockBodyRlpParsing(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// See whether it parsed the elements of the block header
-	testEthBlockFields(output, t)
+	testEthBlockHeaderFields(output, t)
 
 	// TODO
 	// See whether the other elements have been calculated
+	// eth-block-list, eth-tx, eth-tx-trie
 }
 
 func TestBlockHeaderRlpParsing(t *testing.T) {
@@ -38,8 +38,7 @@ func TestBlockHeaderRlpParsing(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// See whether it parsed the elements of the block header
-	testEthBlockFields(output, t)
+	testEthBlockHeaderFields(output, t)
 }
 
 func TestBlockBodyJsonParsing(t *testing.T) {
@@ -53,11 +52,11 @@ func TestBlockBodyJsonParsing(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// See whether it parsed the elements of the block header
-	testEthBlockFields(output, t)
+	testEthBlockHeaderFields(output, t)
 
 	// TODO
 	// See whether the other elements have been calculated
+	// eth-block-list, eth-tx, eth-tx-trie
 }
 
 // TestDecodeBlockHeader should work for both inputs (block header and block body)
@@ -88,15 +87,14 @@ func TestDecodeBlockHeader(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Check all values, because we can
-	testEthBlockFields(ethBlock, t)
+	testEthBlockHeaderFields(ethBlock, t)
 }
 
 /*
   AUXILIARS
 */
 
-func testEthBlockFields(ethBlock *EthBlock, t *testing.T) {
+func testEthBlockHeaderFields(ethBlock *EthBlock, t *testing.T) {
 	// Was the cid calculated?
 	if ethBlock.Cid().String() != "z43AaGF4uHSY4waU68L3DLUKHZP7yfZoo6QbLmid5HomZ4WtbWw" {
 		t.Fatal("Wrong cid")

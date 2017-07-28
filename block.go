@@ -10,6 +10,7 @@ import (
 	cid "github.com/ipfs/go-cid"
 	node "github.com/ipfs/go-ipld-format"
 
+	"github.com/ethereum/go-ethereum/common"
 	types "github.com/ethereum/go-ethereum/core/types"
 	rlp "github.com/ethereum/go-ethereum/rlp"
 )
@@ -20,18 +21,6 @@ type EthBlock struct {
 
 	cid     *cid.Cid
 	rawdata []byte
-}
-
-// Objects to parse info from responses of the ethereum clients JSON APIs
-type objClientJsonApiResponse struct {
-	Result objClientJsonApiResult `json:"result"`
-}
-
-type objClientJsonApiResult struct {
-	types.Header
-
-	// TODO
-	// Add uncles and transactions
 }
 
 // Static (compile time) check that EthBlock satisfies the node.Node interface.
@@ -83,15 +72,8 @@ func FromBlockRLP(r io.Reader) (*EthBlock, error) {
 		rawdata: headerRawData,
 	}
 
-	// Let's process eth-block-list, eth-tx and eth-tx-trie from here
-
-	// eth-block-list (Ommers)
-	/*
-		var uncles []*EthBlock
-		for _, u := range b.Uncles() {
-			uncles = append(uncles, &EthBlock{u})
-		}
-	*/
+	// TODO
+	// eth-block-list, eth-tx, eth-tx-trie
 
 	return ethBlock, nil
 }
@@ -99,14 +81,14 @@ func FromBlockRLP(r io.Reader) (*EthBlock, error) {
 // FromBlockJSON takes the output of an ethereum client JSON API
 // (i.e. parity or geth) and returns a slice of IPLD nodes.
 func FromBlockJSON(r io.Reader) (*EthBlock, error) {
-	var obj objClientJsonApiResponse
+	var obj objJSONBlock
 	dec := json.NewDecoder(r)
 	err := dec.Decode(&obj)
 	if err != nil {
 		return nil, err
 	}
 
-	headerRawData := getRLP(&obj.Result.Header)
+	headerRawData := getRLP(obj.Result.Header)
 	ethBlock := &EthBlock{
 		Header:  &obj.Result.Header,
 		cid:     rawdataToCid(MEthBlock, headerRawData),
@@ -114,7 +96,7 @@ func FromBlockJSON(r io.Reader) (*EthBlock, error) {
 	}
 
 	// TODO
-	// Process eth-block-list, eth-tx and eth-tx-trie
+	// eth-block-list, eth-tx, eth-tx-trie
 
 	return ethBlock, nil
 }
@@ -258,4 +240,38 @@ func (b *EthBlock) MarshalJSON() ([]byte, error) {
 		"uncles":     castCommonHash(MEthBlockList, b.UncleHash),
 	}
 	return json.Marshal(out)
+}
+
+// Defines the output of the JSON RPC API for either
+// "eth_BlockByHash" or "eth_BlockByHeader".
+type objJSONBlock struct {
+	Result objJSONBlockResult `json:"result"`
+}
+
+// Nested struct that takes the contents of the JSON field "result".
+type objJSONBlockResult struct {
+	types.Header           // Use its fields and unmarshaler
+	*objJSONBlockResultExt // Add these fields to the parsing
+}
+
+// Facilitates the composition of the field "result", adding to the
+// Header fields, both uncles and transactions.
+type objJSONBlockResultExt struct {
+	UncleHashes  []common.Hash        `json:"uncles"`
+	Transactions []*types.Transaction `json:"transactions"`
+}
+
+// Overrides the function types.Header.UnmarshalJSON, allowing us
+// to parse the fields of Header, plus uncle hashes and transactions.
+// (yes, uncle hashes. You will need to "eth_getUncleCountByBlockHash"
+// per uncle... Don't kill the messenger)
+func (o *objJSONBlockResult) UnmarshalJSON(input []byte) error {
+	err := o.Header.UnmarshalJSON(input)
+	if err != nil {
+		return err
+	}
+
+	o.objJSONBlockResultExt = &objJSONBlockResultExt{}
+	err = json.Unmarshal(input, o.objJSONBlockResultExt)
+	return err
 }
