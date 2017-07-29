@@ -73,7 +73,7 @@ func FromBlockRLP(r io.Reader) (*EthBlock, error) {
 	}
 
 	// TODO
-	// eth-block-list, eth-tx, eth-tx-trie
+	// If present, process `eth-tx` and `eth-tx-trie`
 
 	return ethBlock, nil
 }
@@ -96,7 +96,7 @@ func FromBlockJSON(r io.Reader) (*EthBlock, error) {
 	}
 
 	// TODO
-	// eth-block-list, eth-tx, eth-tx-trie
+	// If present, process `eth-tx` and `eth-tx-trie`
 
 	return ethBlock, nil
 }
@@ -220,7 +220,8 @@ func (b *EthBlock) Size() (uint64, error) {
   EthBlock functions
 */
 
-// MarshalJSON processes the block header into readable JSON format.
+// MarshalJSON processes the block header into readable JSON format,
+// converting the right links into their cids.
 func (b *EthBlock) MarshalJSON() ([]byte, error) {
 	out := map[string]interface{}{
 		"time":       b.Time,
@@ -242,29 +243,30 @@ func (b *EthBlock) MarshalJSON() ([]byte, error) {
 	return json.Marshal(out)
 }
 
-// Defines the output of the JSON RPC API for either
+// objJSONBlock defines the output of the JSON RPC API for either
 // "eth_BlockByHash" or "eth_BlockByHeader".
 type objJSONBlock struct {
 	Result objJSONBlockResult `json:"result"`
 }
 
-// Nested struct that takes the contents of the JSON field "result".
+// objJSONBLockResult is the  nested struct that takes
+// the contents of the JSON field "result".
 type objJSONBlockResult struct {
 	types.Header           // Use its fields and unmarshaler
 	*objJSONBlockResultExt // Add these fields to the parsing
 }
 
-// Facilitates the composition of the field "result", adding to the
-// Header fields, both uncles and transactions.
+// objJSONBLockResultExt facilitates the composition
+// of the field "result", adding to the
+// `types.Header` fields, both uncles (their hashes) and transactions.
 type objJSONBlockResultExt struct {
 	UncleHashes  []common.Hash        `json:"uncles"`
 	Transactions []*types.Transaction `json:"transactions"`
 }
 
-// Overrides the function types.Header.UnmarshalJSON, allowing us
+// UnmarshalJSON overrides the function types.Header.UnmarshalJSON, allowing us
 // to parse the fields of Header, plus uncle hashes and transactions.
-// (yes, uncle hashes. You will need to "eth_getUncleCountByBlockHash"
-// per uncle... Don't kill the messenger)
+// (yes, uncle hashes. You will need to "eth_getUncleCountByBlockHash" per each uncle)
 func (o *objJSONBlockResult) UnmarshalJSON(input []byte) error {
 	err := o.Header.UnmarshalJSON(input)
 	if err != nil {

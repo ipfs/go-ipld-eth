@@ -27,7 +27,7 @@ As stated above, the _plugin_ library only works in Linux. Bug the go team to su
 
 * ... Or, if you are in OSX, [use this handy script](hacks/osx.sh)
 
-## Usage
+## Usage and Examples
 
 (TODO)
 (Note that there are two kind of inputs for this problem: json and raw)

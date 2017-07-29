@@ -83,7 +83,6 @@ func (ep *EthereumPlugin) RegisterBlockDecoders(dec node.BlockDecoder) error {
 	dec.Register(eth.MEthBlock, EthBlockParser) // eth-block
 	// TODO
 	// Let's deal with these two elements later
-	// We will do it anyways, during this very PR.
 	// dec.Register(eth.MEthTx, EthTxParser)
 	// dec.Register(eth.MEthTxTrie, EthTxTrieParser)
 	return nil
