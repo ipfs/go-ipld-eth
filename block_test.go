@@ -110,7 +110,7 @@ func testEthBlockHeaderFields(ethBlock *EthBlock, t *testing.T) {
 		t.Fatal("Wrong ParentHash")
 	}
 	if fmt.Sprintf("%x", ethBlock.UncleHash) != "1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347" {
-		t.Fatal("Wrong UncleHash")
+		t.Fatal("Wrong UncleHash field")
 	}
 	if fmt.Sprintf("%x", ethBlock.Coinbase) != "52bc44d5378309ee2abf1539bf71de1b7d7be3b5" {
 		t.Fatal("Wrong Coinbase")

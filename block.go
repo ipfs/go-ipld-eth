@@ -31,7 +31,7 @@ var _ node.Node = (*EthBlock)(nil)
 */
 
 // FromBlockRLP takes an RLP message representing
-// an ethereum block header or body (header, uncles and txs)
+// an ethereum block header or body (header, ommers and txs)
 // to return it as an slice of IPLD nodes for further processing.
 func FromBlockRLP(r io.Reader) (*EthBlock, error) {
 	// We may want to use this stream several times
@@ -48,7 +48,7 @@ func FromBlockRLP(r io.Reader) (*EthBlock, error) {
 			return nil, err
 		}
 
-		// Maybe it is just a header... (body sans uncles and txs)
+		// Maybe it is just a header... (body sans ommers and txs)
 		var decodedHeader types.Header
 		err := rlp.Decode(bytes.NewBuffer(rawdata), &decodedHeader)
 		if err != nil {
@@ -63,7 +63,7 @@ func FromBlockRLP(r io.Reader) (*EthBlock, error) {
 		}, nil
 	}
 
-	// This is a block body (header + uncles + txs)
+	// This is a block body (header + ommers + txs)
 	// We'll extract the header bits here
 	headerRawData := getRLP(decodedBlock.Header())
 	ethBlock := &EthBlock{
@@ -258,15 +258,15 @@ type objJSONBlockResult struct {
 
 // objJSONBLockResultExt facilitates the composition
 // of the field "result", adding to the
-// `types.Header` fields, both uncles (their hashes) and transactions.
+// `types.Header` fields, both ommers (their hashes) and transactions.
 type objJSONBlockResultExt struct {
-	UncleHashes  []common.Hash        `json:"uncles"`
+	OmmerHashes  []common.Hash        `json:"uncles"`
 	Transactions []*types.Transaction `json:"transactions"`
 }
 
 // UnmarshalJSON overrides the function types.Header.UnmarshalJSON, allowing us
-// to parse the fields of Header, plus uncle hashes and transactions.
-// (yes, uncle hashes. You will need to "eth_getUncleCountByBlockHash" per each uncle)
+// to parse the fields of Header, plus ommer hashes and transactions.
+// (yes, ommer hashes. You will need to "eth_getUncleCountByBlockHash" per each ommer)
 func (o *objJSONBlockResult) UnmarshalJSON(input []byte) error {
 	err := o.Header.UnmarshalJSON(input)
 	if err != nil {
