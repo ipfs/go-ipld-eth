@@ -142,9 +142,25 @@ ipfs dag get z43AaGExMLxj6ujVVbx3j4LRc6QGMBiqYCrgot5hG8Vnxm7Tf9M
 
 ```
 
-### TODO
+## Navigate though the transactions of a block
 
-* Support input for RLP encoded state trie elements (`eth-state-trie`).
-* Support processing of txs to make the user able to retrieve `eth-tx` and `eth-tx-trie`.
-* Supoort input for JSON encoded Transaction Receipts (`eth-tx-receipt`).
-* The rest of the IPLD types in diverse inputs!
+(WIP)
+
+## TODO
+
+* `[0x90]` - `eth-block` input:
+  * Support the input of `eth-tx-trie` (`[0x95]`), when we are adding a block body.
+  * Checkout navigation from a link provided in an obtained block.
+  * Can we get the `eth-tx` (`[0x91]`) pointed by the `eth-tx-trie` leaf?
+
+* `[0x92]` - `eth-tx-receipt`:
+  * Propose a script to get all receipts from a block and make a JSON array of them.
+  * Support the input of this JSON array to form the `eth-tx-receipt-trie` (`[0x96]`) leaves, and the `eth-tx-receipt` objects.
+
+* `[0x97]` - `eth-state-trie`. Support input for RLP encoded state trie elements.
+  * HINT: We get them from the Parity IPFS API.
+
+* The rest of the IPLD ETH Types:
+  * `[0x93]` - `eth-account-snapshot`
+  * `[0x94]` - `eth-block-list`
+  * `[0x98]` - `eth-storage-trie`

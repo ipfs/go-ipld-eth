@@ -32,12 +32,12 @@ var _ node.Node = (*EthBlock)(nil)
 
 // FromBlockRLP takes an RLP message representing
 // an ethereum block header or body (header, ommers and txs)
-// to return it as an slice of IPLD nodes for further processing.
-func FromBlockRLP(r io.Reader) (*EthBlock, error) {
+// to return it as a set of IPLD nodes for further processing.
+func FromBlockRLP(r io.Reader) (*EthBlock, []*EthTx, []*EthTxTrie, error) {
 	// We may want to use this stream several times
 	rawdata, err := ioutil.ReadAll(r)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 
 	// Let's try to decode the received element as a block body
@@ -45,14 +45,14 @@ func FromBlockRLP(r io.Reader) (*EthBlock, error) {
 	err = rlp.Decode(bytes.NewBuffer(rawdata), &decodedBlock)
 	if err != nil {
 		if err.Error()[:41] != "rlp: expected input list for types.Header" {
-			return nil, err
+			return nil, nil, nil, err
 		}
 
 		// Maybe it is just a header... (body sans ommers and txs)
 		var decodedHeader types.Header
 		err := rlp.Decode(bytes.NewBuffer(rawdata), &decodedHeader)
 		if err != nil {
-			return nil, err
+			return nil, nil, nil, err
 		}
 
 		// It was a header
@@ -60,7 +60,7 @@ func FromBlockRLP(r io.Reader) (*EthBlock, error) {
 			Header:  &decodedHeader,
 			cid:     rawdataToCid(MEthBlock, rawdata),
 			rawdata: rawdata,
-		}, nil
+		}, nil, nil, nil
 	}
 
 	// This is a block body (header + ommers + txs)
@@ -72,20 +72,21 @@ func FromBlockRLP(r io.Reader) (*EthBlock, error) {
 		rawdata: headerRawData,
 	}
 
-	// TODO
-	// If present, process `eth-tx` and `eth-tx-trie`
+	// Process the found eth-tx objects
+	ethTxNodes, ethTxTrieNodes := processTransactions(decodedBlock.Transactions(),
+		decodedBlock.Header().TxHash[:])
 
-	return ethBlock, nil
+	return ethBlock, ethTxNodes, ethTxTrieNodes, nil
 }
 
 // FromBlockJSON takes the output of an ethereum client JSON API
-// (i.e. parity or geth) and returns a slice of IPLD nodes.
-func FromBlockJSON(r io.Reader) (*EthBlock, error) {
+// (i.e. parity or geth) and returns a set of IPLD nodes.
+func FromBlockJSON(r io.Reader) (*EthBlock, []*EthTx, []*EthTxTrie, error) {
 	var obj objJSONBlock
 	dec := json.NewDecoder(r)
 	err := dec.Decode(&obj)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 
 	headerRawData := getRLP(obj.Result.Header)
@@ -95,19 +96,40 @@ func FromBlockJSON(r io.Reader) (*EthBlock, error) {
 		rawdata: headerRawData,
 	}
 
-	// TODO
-	// If present, process `eth-tx` and `eth-tx-trie`
+	// Process the found eth-tx objects
+	ethTxNodes, ethTxTrieNodes := processTransactions(obj.Result.Transactions,
+		obj.Result.Header.TxHash[:])
 
-	return ethBlock, nil
+	return ethBlock, ethTxNodes, ethTxTrieNodes, nil
+}
+
+// processTransactions will take the found transactions in a parsed block body
+// to return IPLD node slices for eth-tx and eth-tx-trie
+func processTransactions(txs []*types.Transaction, expectedTxRoot []byte) ([]*EthTx, []*EthTxTrie) {
+	var ethTxNodes []*EthTx
+	transactionTrie := newTxTrie()
+
+	for idx, tx := range txs {
+		ethTx := NewTx(tx) // Will panic if it finds an error while parsing a tx
+		ethTxNodes = append(ethTxNodes, ethTx)
+		transactionTrie.addTx(idx, ethTx.RawData())
+	}
+
+	ethTxTrieNodes := transactionTrie.getNodes()
+	if !bytes.Equal(transactionTrie.rootHash(), expectedTxRoot) {
+		panic("Wrong transaction hash computed!")
+	}
+
+	return ethTxNodes, ethTxTrieNodes
 }
 
 /*
   OUTPUT
 */
 
-// DecodeBlockHeader takes raw binary data from IPFS and returns
-// a block header for further processing.
-func DecodeBlockHeader(c *cid.Cid, b []byte) (*EthBlock, error) {
+// DecodeEthBlock takes a cid and its raw binary data
+// from IPFS and returns an EthBlock object for further processing.
+func DecodeEthBlock(c *cid.Cid, b []byte) (*EthBlock, error) {
 	var h types.Header
 	err := rlp.Decode(bytes.NewReader(b), &h)
 	if err != nil {
@@ -137,7 +159,7 @@ func (b *EthBlock) Cid() *cid.Cid {
 
 // String is a helper for output
 func (b *EthBlock) String() string {
-	return fmt.Sprintf("<EthBlock %s>", b.Cid())
+	return fmt.Sprintf("<EthBlock %s>", b.cid)
 }
 
 // Loggable returns a map the type of IPLD Link.

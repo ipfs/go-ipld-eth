@@ -15,16 +15,12 @@ func TestBlockBodyRlpParsing(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	output, err := FromBlockRLP(fi)
+	output, _, _, err := FromBlockRLP(fi)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	testEthBlockHeaderFields(output, t)
-
-	// TODO
-	// See whether the other elements have been calculated
-	// eth-block-list, eth-tx, eth-tx-trie
 }
 
 func TestBlockHeaderRlpParsing(t *testing.T) {
@@ -33,7 +29,7 @@ func TestBlockHeaderRlpParsing(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	output, err := FromBlockRLP(fi)
+	output, _, _, err := FromBlockRLP(fi)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,16 +43,12 @@ func TestBlockBodyJsonParsing(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	output, err := FromBlockJSON(fi)
+	output, _, _, err := FromBlockJSON(fi)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	testEthBlockHeaderFields(output, t)
-
-	// TODO
-	// See whether the other elements have been calculated
-	// eth-block-list, eth-tx, eth-tx-trie
 }
 
 // TestDecodeBlockHeader should work for both inputs (block header and block body)
@@ -82,7 +74,7 @@ func TestDecodeBlockHeader(t *testing.T) {
 	}
 
 	// Now the proper test
-	ethBlock, err := DecodeBlockHeader(storedBlockHeader.Cid(), storedBlockHeader.RawData())
+	ethBlock, err := DecodeEthBlock(storedBlockHeader.Cid(), storedBlockHeader.RawData())
 	if err != nil {
 		t.Fatal(err)
 	}

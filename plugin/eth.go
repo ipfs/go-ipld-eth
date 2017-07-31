@@ -53,24 +53,39 @@ func (ep *EthereumPlugin) RegisterInputEncParsers(iec coredag.InputEncParsers) e
 // of either an RLP block header, or an RLP body (header + uncles + txs)
 // to return an IPLD Node slice.
 func EthBlockRawInputParser(r io.Reader) ([]node.Node, error) {
-	blockHeader, err := eth.FromBlockRLP(r)
+	blockHeader, txs, txTrieNodes, err := eth.FromBlockRLP(r)
 	if err != nil {
 		return nil, err
 	}
+
 	var out []node.Node
 	out = append(out, blockHeader)
+	for _, tx := range txs {
+		out = append(out, tx)
+	}
+	for _, ttn := range txTrieNodes {
+		out = append(out, ttn)
+	}
 	return out, nil
 }
 
 // EthBlockJSONInputParser will take the piped input, a JSON representation of
 // a block header or body (header + uncles + txs), to return an IPLD Node slice.
 func EthBlockJSONInputParser(r io.Reader) ([]node.Node, error) {
-	blockHeader, err := eth.FromBlockJSON(r)
+	blockHeader, txs, txTrieNodes, err := eth.FromBlockJSON(r)
 	if err != nil {
+
 		return nil, err
 	}
+
 	var out []node.Node
 	out = append(out, blockHeader)
+	for _, tx := range txs {
+		out = append(out, tx)
+	}
+	for _, ttn := range txTrieNodes {
+		out = append(out, ttn)
+	}
 	return out, nil
 }
 
@@ -80,25 +95,24 @@ func EthBlockJSONInputParser(r io.Reader) ([]node.Node, error) {
 
 // RegisterBlockDecoders enters which functions will help us to decode the requested IPLD blocks.
 func (ep *EthereumPlugin) RegisterBlockDecoders(dec node.BlockDecoder) error {
-	dec.Register(eth.MEthBlock, EthBlockParser) // eth-block
-	// TODO
-	// Let's deal with these two elements later
-	// dec.Register(eth.MEthTx, EthTxParser)
-	// dec.Register(eth.MEthTxTrie, EthTxTrieParser)
+	dec.Register(eth.MEthBlock, EthBlockParser)   // eth-block
+	dec.Register(eth.MEthTx, EthTxParser)         // eth-tx
+	dec.Register(eth.MEthTxTrie, EthTxTrieParser) // eth-tx-trie
 	return nil
 }
 
 // EthBlockParser takes care of the eth-block IPLD objects (ethereum block headers)
 func EthBlockParser(b block.Block) (node.Node, error) {
-	return eth.DecodeBlockHeader(b.Cid(), b.RawData())
+	return eth.DecodeEthBlock(b.Cid(), b.RawData())
 }
 
 // EthTxParser takes care of the eth-tx IPLD objects (ethereum transactions)
 func EthTxParser(b block.Block) (node.Node, error) {
-	return eth.ParseTx(b.RawData())
+	return eth.DecodeEthTx(b.Cid(), b.RawData())
 }
 
-// EthTxTrieParser takes care of the eth-tx-trie objects (ethereum transaction trie nodes)
+// EthTxTrieParser takes care of the eth-tx-trie IPLD objects
+// (ethereum transactions as patricia merkle tree leaves)
 func EthTxTrieParser(b block.Block) (node.Node, error) {
-	return eth.NewTrieNode(b.RawData())
+	return eth.DecodeEthTxTrie(b.Cid(), b.RawData())
 }
