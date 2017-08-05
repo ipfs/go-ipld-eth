@@ -51,9 +51,9 @@ func keccak256ToCid(codec uint64, h []byte) *cid.Cid {
 	return cid.NewCidV1(codec, mh.Multihash(buf))
 }
 
-// TODO
-// Add documentation
-func castCommonHash(codec uint64, h common.Hash) *cid.Cid {
+// commonHashToCid takes a go-ethereum common.Hash and returns its
+// cid based on the codec given,
+func commonHashToCid(codec uint64, h common.Hash) *cid.Cid {
 	mhash, err := mh.Encode(h[:], mh.KECCAK_256)
 	if err != nil {
 		panic(err)
@@ -62,8 +62,7 @@ func castCommonHash(codec uint64, h common.Hash) *cid.Cid {
 	return cid.NewCidV1(codec, mhash)
 }
 
-// TODO
-// Add documentation
+// getRLP encodes the given object to RLP returning its bytes.
 func getRLP(object interface{}) []byte {
 	buf := new(bytes.Buffer)
 	if err := rlp.Encode(buf, object); err != nil {

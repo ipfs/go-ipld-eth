@@ -11,14 +11,10 @@ import (
 
 func TestTxInBlockBodyRlpParsing(t *testing.T) {
 	fi, err := os.Open("test_data/eth-block-body-rlp-999999")
-	if err != nil {
-		t.Fatal(err)
-	}
+	checkError(err, t)
 
 	_, output, _, err := FromBlockRLP(fi)
-	if err != nil {
-		t.Fatal(err)
-	}
+	checkError(err, t)
 
 	if len(output) != 11 {
 		t.Fatal("Wrong number of parsed txs")
@@ -31,14 +27,10 @@ func TestTxInBlockBodyRlpParsing(t *testing.T) {
 
 func TestTxInBlockHeaderRlpParsing(t *testing.T) {
 	fi, err := os.Open("test_data/eth-block-header-rlp-999999")
-	if err != nil {
-		t.Fatal(err)
-	}
+	checkError(err, t)
 
 	_, output, _, err := FromBlockRLP(fi)
-	if err != nil {
-		t.Fatal(err)
-	}
+	checkError(err, t)
 
 	if len(output) != 0 {
 		t.Fatal("No transactions should have been gotten from here")
@@ -47,14 +39,10 @@ func TestTxInBlockHeaderRlpParsing(t *testing.T) {
 
 func TestTxInBlockBodyJsonParsing(t *testing.T) {
 	fi, err := os.Open("test_data/eth-block-body-json-999999")
-	if err != nil {
-		t.Fatal(err)
-	}
+	checkError(err, t)
 
 	_, output, _, err := FromBlockJSON(fi)
-	if err != nil {
-		t.Fatal(err)
-	}
+	checkError(err, t)
 
 	if len(output) != 11 {
 		t.Fatal("Wrong number of parsed txs")
@@ -73,22 +61,16 @@ func TestDecodeTransaction(t *testing.T) {
 			"8512af0d4000801ba0e9a25c929c26d1a95232ba75aef419a91b470651eb77614695e16c" +
 			"5ba023e383a0679fb2fc0d0b0f3549967c0894ee7d947f07d238a83ef745bc3ced5143a4af36"
 	rawTransaction, err := hex.DecodeString(rawTransactionString)
-	if err != nil {
-		t.Fatal(err)
-	}
+	checkError(err, t)
 	c := rawdataToCid(MEthTx, rawTransaction)
 
 	// Just to clarify: This `block` is an IPFS block
 	storedTransaction, err := block.NewBlockWithCid(rawTransaction, c)
-	if err != nil {
-		t.Fatal(err)
-	}
+	checkError(err, t)
 
 	// Now the proper test
 	ethTransaction, err := DecodeEthTx(storedTransaction.Cid(), storedTransaction.RawData())
-	if err != nil {
-		t.Fatal(err)
-	}
+	checkError(err, t)
 
 	testTx05Fields(ethTransaction, t)
 }

@@ -164,5 +164,5 @@ func (t *EthTx) Size() (uint64, error) {
 
 // MarshalJSON processes the transaction into readable JSON format.
 func (t *EthTx) MarshalJSON() ([]byte, error) {
-	return t.MarshalJSON()
+	return t.Transaction.MarshalJSON()
 }

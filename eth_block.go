@@ -181,10 +181,14 @@ func (b *EthBlock) Resolve(p []string) (interface{}, []string, error) {
 	}
 
 	switch p[0] {
-	case "tx":
-		return &node.Link{Cid: castCommonHash(MEthTxTrie, b.TxHash)}, p[1:], nil
+	case "bloom":
+		return b.Bloom, p[1:], nil
+	case "coinbase":
+		return b.Coinbase, p[1:], nil
 	case "parent":
-		return &node.Link{Cid: castCommonHash(MEthBlock, b.ParentHash)}, p[1:], nil
+		return &node.Link{Cid: commonHashToCid(MEthBlock, b.ParentHash)}, p[1:], nil
+	case "tx":
+		return &node.Link{Cid: commonHashToCid(MEthTxTrie, b.TxHash)}, p[1:], nil
 	default:
 		return nil, nil, fmt.Errorf("no such link")
 	}
@@ -196,8 +200,7 @@ func (b *EthBlock) Tree(p string, depth int) []string {
 	return nil
 }
 
-// ResolveLink is a helper function that calls resolve and asserts the
-// output is a link
+// ResolveLink is a helper function that allows easier traversal of links through blocks
 func (b *EthBlock) ResolveLink(p []string) (*node.Link, []string, error) {
 	obj, rest, err := b.Resolve(p)
 	if err != nil {
@@ -220,11 +223,11 @@ func (b *EthBlock) Copy() node.Node {
 // HINT: Use `ipfs refs <cid>`
 func (b *EthBlock) Links() []*node.Link {
 	return []*node.Link{
-		&node.Link{Cid: castCommonHash(MEthBlock, b.ParentHash)},
-		&node.Link{Cid: castCommonHash(MEthTxReceiptTrie, b.ReceiptHash)},
-		&node.Link{Cid: castCommonHash(MEthStateTrie, b.Root)},
-		&node.Link{Cid: castCommonHash(MEthTxTrie, b.TxHash)},
-		&node.Link{Cid: castCommonHash(MEthBlockList, b.UncleHash)},
+		&node.Link{Cid: commonHashToCid(MEthBlock, b.ParentHash)},
+		&node.Link{Cid: commonHashToCid(MEthTxReceiptTrie, b.ReceiptHash)},
+		&node.Link{Cid: commonHashToCid(MEthStateTrie, b.Root)},
+		&node.Link{Cid: commonHashToCid(MEthTxTrie, b.TxHash)},
+		&node.Link{Cid: commonHashToCid(MEthBlockList, b.UncleHash)},
 	}
 }
 
@@ -243,24 +246,30 @@ func (b *EthBlock) Size() (uint64, error) {
 */
 
 // MarshalJSON processes the block header into readable JSON format,
-// converting the right links into their cids.
+// converting the right links into their cids, and keeping the original
+// hex hash, allowing the user to simplify external queries.
 func (b *EthBlock) MarshalJSON() ([]byte, error) {
 	out := map[string]interface{}{
-		"time":       b.Time,
-		"bloom":      b.Bloom,
-		"coinbase":   b.Coinbase,
-		"difficulty": b.Difficulty,
-		"extra":      b.Extra,
-		"gaslimit":   b.GasLimit,
-		"gasused":    b.GasUsed,
-		"mixdigest":  b.MixDigest,
-		"nonce":      b.Nonce,
-		"number":     b.Number,
-		"parent":     castCommonHash(MEthBlock, b.ParentHash),
-		"receipts":   castCommonHash(MEthTxReceiptTrie, b.ReceiptHash),
-		"root":       castCommonHash(MEthStateTrie, b.Root),
-		"tx":         castCommonHash(MEthTxTrie, b.TxHash),
-		"uncles":     castCommonHash(MEthBlockList, b.UncleHash),
+		"time":        b.Time,
+		"bloom":       b.Bloom,
+		"coinbase":    b.Coinbase,
+		"difficulty":  b.Difficulty,
+		"extra":       b.Extra,
+		"gaslimit":    b.GasLimit,
+		"gasused":     b.GasUsed,
+		"mixdigest":   b.MixDigest,
+		"nonce":       b.Nonce,
+		"number":      b.Number,
+		"parent":      commonHashToCid(MEthBlock, b.ParentHash),
+		"parentHash":  b.ParentHash.Hex(),
+		"receipts":    commonHashToCid(MEthTxReceiptTrie, b.ReceiptHash),
+		"receiptHash": b.ReceiptHash.Hex(),
+		"root":        commonHashToCid(MEthStateTrie, b.Root),
+		"rootHash":    b.Root.Hex(),
+		"tx":          commonHashToCid(MEthTxTrie, b.TxHash),
+		"txHash":      b.TxHash.Hex(),
+		"uncles":      commonHashToCid(MEthBlockList, b.UncleHash),
+		"uncleHash":   b.UncleHash.Hex(),
 	}
 	return json.Marshal(out)
 }

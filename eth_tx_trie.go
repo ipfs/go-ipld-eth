@@ -1,6 +1,7 @@
 package ipldeth
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -220,12 +221,12 @@ func (t *EthTxTrie) Size() (uint64, error) {
 }
 
 /*
-  EthTx functions
+  EthTxTrie functions
 */
 
 // MarshalJSON processes the transaction trie into readable JSON format.
 func (t *EthTxTrie) MarshalJSON() ([]byte, error) {
-	return t.MarshalJSON()
+	return json.Marshal(t.arr)
 }
 
 // txTrie wraps a localTrie for use on the transaction trie.
