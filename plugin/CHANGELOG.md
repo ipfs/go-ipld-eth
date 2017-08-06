@@ -14,6 +14,7 @@
       * `bloom`
       * `coinbase`
       * `parent`
+  * Support the input of `eth-tx-trie` (`[0x95]`), when we are adding a block body.
   * Test coverage is `52.7%`.
 
 ## `0.0.2`
