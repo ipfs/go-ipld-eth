@@ -40,7 +40,7 @@ var _ node.Node = (*EthTxTrie)(nil)
   OUTPUT
 */
 
-// DecodeTxTrie returns an EthTxTrie object from its cid and rawdata.
+// DecodeEthTxTrie returns an EthTxTrie object from its cid and rawdata.
 // It is used by both the trie calculations on block body parsing,
 // as well as by the decoding of an object from the IPLD forest.
 func DecodeEthTxTrie(c *cid.Cid, b []byte) (*EthTxTrie, error) {
