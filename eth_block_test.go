@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"runtime"
 	"strconv"
 	"testing"
 
@@ -471,7 +472,8 @@ func TestEthBlockSize(t *testing.T) {
 // checkError makes 3 lines into 1.
 func checkError(err error, t *testing.T) {
 	if err != nil {
-		t.Fatal(err)
+		_, fn, line, _ := runtime.Caller(1)
+		t.Fatalf("[%v:%v] %v", fn, line, err)
 	}
 }
 
@@ -498,6 +500,7 @@ func prepareStoredEthBlock(filepath string, t *testing.T) *block.BasicBlock {
 	checkError(err, t)
 
 	c := rawdataToCid(MEthBlock, b)
+	// It's good to clarify that this one below is an IPLD block
 	storedEthBlock, err := block.NewBlockWithCid(b, c)
 	checkError(err, t)
 

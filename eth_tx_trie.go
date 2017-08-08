@@ -3,23 +3,22 @@ package ipldeth
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 
 	cid "github.com/ipfs/go-cid"
 	node "github.com/ipfs/go-ipld-format"
-
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/rlp"
 )
 
 // EthTxTrie (eth-tx-trie codec 0x95) represents
-// an ethereum transaction as a leaf of a merkle tree.
-// i.e. its fields can be accessed as a Transaction, but its rawdata is
-// the RLP-encoding as a merkle leaf.
+// a node from the transaction trie in ethereum.
 type EthTxTrie struct {
-	*types.Transaction
+	// leaf, extension or branch
+	nodeKind string
 
-	arr     []interface{}
+	// If leaf or extension: [0] is key, [1] is val.
+	// If branch: [0] - [16] are children.
+	elements []interface{}
+
+	// IPLD block information
 	cid     *cid.Cid
 	rawdata []byte
 }
@@ -41,63 +40,18 @@ var _ node.Node = (*EthTxTrie)(nil)
 */
 
 // DecodeEthTxTrie returns an EthTxTrie object from its cid and rawdata.
-// It is used by both the trie calculations on block body parsing,
-// as well as by the decoding of an object from the IPLD forest.
 func DecodeEthTxTrie(c *cid.Cid, b []byte) (*EthTxTrie, error) {
-	var i []interface{}
-	err := rlp.DecodeBytes(b, &i)
+	nodeKind, elements, err := decodeTrieNode(b)
 	if err != nil {
 		return nil, err
 	}
 
-	switch len(i) {
-	case 2:
-		key := i[0].([]byte)
-		valb := i[1].([]byte)
-
-		var val interface{}
-		if len(valb) == 32 {
-			// This is a reference to another eth-tx-trie object
-			val = keccak256ToCid(MEthTxTrie, valb)
-		} else {
-			// This is a proper transaction
-			var t types.Transaction
-			err := rlp.DecodeBytes(valb, &t)
-			if err != nil {
-				return nil, err
-			}
-			val = &EthTx{
-				Transaction: &t,
-				cid:         rawdataToCid(MEthTx, valb),
-				rawdata:     valb,
-			}
-		}
-		return &EthTxTrie{
-			arr:     []interface{}{key, val},
-			cid:     c,
-			rawdata: b,
-		}, nil
-	case 17:
-		var parsed []interface{}
-		for _, v := range i {
-			bv := v.([]byte)
-			switch len(bv) {
-			case 0:
-				parsed = append(parsed, nil)
-			case 32:
-				parsed = append(parsed, keccak256ToCid(MEthTxTrie, bv))
-			default:
-				return nil, fmt.Errorf("unrecognized object in trie: %v", bv)
-			}
-		}
-		return &EthTxTrie{
-			arr:     parsed,
-			rawdata: b,
-			cid:     c,
-		}, nil
-	default:
-		return nil, fmt.Errorf("unknown trie node type")
-	}
+	return &EthTxTrie{
+		nodeKind: nodeKind,
+		elements: elements,
+		rawdata:  b,
+		cid:      c,
+	}, nil
 }
 
 /*
@@ -129,52 +83,20 @@ func (t *EthTxTrie) Loggable() map[string]interface{} {
 // Resolve resolves a path through this node, stopping at any link boundary
 // and returning the object found as well as the remaining path to traverse
 func (t *EthTxTrie) Resolve(p []string) (interface{}, []string, error) {
-	if len(p) == 0 {
-		return t, nil, nil
-	}
-
-	i, err := strconv.Atoi(p[0])
+	obj, rest, err := resolveTriePath(p, t.nodeKind, t.elements)
 	if err != nil {
-		return nil, nil, fmt.Errorf("expected array index to trie: %s", err)
+		return nil, nil, err
 	}
 
-	if i < 0 || i >= len(t.arr) {
-		return nil, nil, fmt.Errorf("index in trie out of range")
-	}
-
-	switch obj := t.arr[i].(type) {
-	case *cid.Cid:
-		return &node.Link{Cid: obj}, p[1:], nil
-	case *EthTx:
-		return obj, p[1:], nil
-	default:
-		return nil, nil, fmt.Errorf("unexpected object type in trie")
-	}
+	return obj, rest, nil
 }
 
 // Tree lists all paths within the object under 'path', and up to the given depth.
 // To list the entire object (similar to `find .`) pass "" and -1
 func (t *EthTxTrie) Tree(p string, depth int) []string {
-	if p != "" {
-		return nil
-	}
-	if depth > 0 {
-		return nil
-	}
-
-	if len(t.arr) == 17 {
-		var out []string
-		for i, v := range t.arr {
-			if len(v.([]byte)) == 0 {
-				out = append(out, fmt.Sprintf("%x", i))
-			}
-		}
-		return out
-	}
-
-	// TODO: not sure what to put here. Most of the 'keys' dont seem to be human readable
-	return []string{"VALUE NODE"}
-
+	// PLACEHOLDER
+	return nil
+	// PLACEHOLDER
 }
 
 // ResolveLink is a helper function that calls resolve and asserts the
@@ -200,14 +122,9 @@ func (t *EthTxTrie) Copy() node.Node {
 
 // Links is a helper function that returns all links within this object
 func (t *EthTxTrie) Links() []*node.Link {
-	var out []*node.Link
-	for _, i := range t.arr {
-		c, ok := i.(*cid.Cid)
-		if ok {
-			out = append(out, &node.Link{Cid: c})
-		}
-	}
-	return out
+	// PLACEHOLDER
+	return nil
+	// PLACEHOLDER
 }
 
 // Stat will go away. It is here to comply with the interface.
@@ -217,7 +134,7 @@ func (t *EthTxTrie) Stat() (*node.NodeStat, error) {
 
 // Size will go away. It is here to comply with the interface.
 func (t *EthTxTrie) Size() (uint64, error) {
-	return uint64(t.Transaction.Size().Int64()), nil
+	return 0, nil
 }
 
 /*
@@ -226,7 +143,34 @@ func (t *EthTxTrie) Size() (uint64, error) {
 
 // MarshalJSON processes the transaction trie into readable JSON format.
 func (t *EthTxTrie) MarshalJSON() ([]byte, error) {
-	return json.Marshal(t.arr)
+	var out map[string]interface{}
+
+	switch t.nodeKind {
+	case "branch":
+		out = map[string]interface{}{
+			"type": "branch",
+			"0":    t.elements[0],
+			"1":    t.elements[1],
+			"2":    t.elements[2],
+			"3":    t.elements[3],
+			"4":    t.elements[4],
+			"5":    t.elements[5],
+			"6":    t.elements[6],
+			"7":    t.elements[7],
+			"8":    t.elements[8],
+			"9":    t.elements[9],
+			"a":    t.elements[10],
+			"b":    t.elements[11],
+			"c":    t.elements[12],
+			"d":    t.elements[13],
+			"e":    t.elements[14],
+			"f":    t.elements[15],
+		}
+	default:
+		return nil, fmt.Errorf("nodeKind %s not supported", t.nodeKind)
+	}
+
+	return json.Marshal(out)
 }
 
 // txTrie wraps a localTrie for use on the transaction trie.
@@ -241,18 +185,6 @@ func newTxTrie() *txTrie {
 	}
 }
 
-// addTx takes the rawdata of an EthTx to incorporate it to the
-// transaction trie.
-func (tt *txTrie) addTx(idx int, rawdata []byte) {
-	tt.add(idx, rawdata)
-}
-
-// rootHash returns the computed trie root.
-// Useful for sanity checks on parsed data.
-func (tt *txTrie) rootHash() []byte {
-	return tt.trie.Hash().Bytes()
-}
-
 // getNodes invokes the localTrie, which computes the root hash of the
 // transaction trie and returns its database keys, to return a slice
 // of EthTxTrie nodes.
@@ -265,13 +197,24 @@ func (tt *txTrie) getNodes() []*EthTxTrie {
 		if err != nil {
 			panic(err)
 		}
-		c := rawdataToCid(MEthTxTrie, rawdata)
-		ethTxTrie, err := DecodeEthTxTrie(c, rawdata)
-		if err != nil {
-			panic(err)
-		}
-		out = append(out, ethTxTrie)
+
+		out = append(out, &EthTxTrie{
+			cid:     rawdataToCid(MEthTxTrie, rawdata),
+			rawdata: rawdata,
+		})
 	}
 
 	return out
+}
+
+// getTxFields returns the fields defined in an ethereum transaction
+func getTxFields() map[string]interface{} {
+	return map[string]interface{}{
+		"nonce":     nil,
+		"gasPrice":  nil,
+		"gas":       nil,
+		"toAddress": nil,
+		"value":     nil,
+		"data":      nil,
+	}
 }
