@@ -2,6 +2,8 @@ package ipldeth
 
 import (
 	"bytes"
+	"fmt"
+	"strings"
 
 	cid "github.com/ipfs/go-cid"
 	mh "github.com/multiformats/go-multihash"
@@ -119,4 +121,117 @@ func (lt *localTrie) getKeys() [][]byte {
 	}
 
 	return lt.db.Keys()
+}
+
+// decodeTrieNode takes a raw RLP-encoded trie node, returning its kind
+// (branch, extension or leaf) and parsed data for further processing.
+func decodeTrieNode(b []byte) (string, []interface{}, error) {
+	var i []interface{}
+	err := rlp.DecodeBytes(b, &i)
+	if err != nil {
+		return "", nil, err
+	}
+
+	switch len(i) {
+	// Leaf or Extension?
+	case 2:
+
+		key := i[0].([]byte)
+		val := i[1].([]byte)
+
+		if len(val) == 32 {
+			return "extension", []interface{}{key, val}, nil
+		} else {
+			return "leaf", []interface{}{key, val}, nil
+		}
+
+	// Branch
+	case 17:
+		var children []interface{}
+		for _, vi := range i {
+			v := vi.([]byte)
+
+			switch len(v) {
+			case 0:
+				children = append(children, nil)
+			case 32:
+				children = append(children, keccak256ToCid(MEthTxTrie, v))
+			default:
+				// The value should be either nil or a reference to another trie element.
+				// We are not expecting branch nodes with children of less than 32 bytes.
+				return "", nil, fmt.Errorf("unrecognized object in trie: %v", v)
+			}
+		}
+		return "branch", children, nil
+
+	default:
+		return "", nil, fmt.Errorf("unknown trie node type")
+	}
+}
+
+// validateTriePath takes a trie path, checking whether each element represents
+// an hexadecimal character, and returns a slice of one hex character elements,
+// allowing the input of paths such as /b/0d010/1 /0/1/1/b /cc001d4 possible.
+func validateTriePath(p []string, specialFields map[string]interface{}) ([]string, error) {
+	var (
+		testString string
+		output     []string
+	)
+
+	//
+	lastValue := p[len(p)-1]
+	if _, ok := specialFields[lastValue]; ok {
+		// Remove this lastValue and add it after the validation.
+		// Examples of lastValue: nonce, gasPrice for txs. balance for states.
+		p = p[:len(p)-1]
+	} else {
+		lastValue = ""
+	}
+
+	for _, v := range p {
+		if v == "" {
+			return nil, fmt.Errorf("Unexpected blank element in path")
+		}
+		testString += v
+	}
+
+	testString = strings.ToLower(testString)
+
+	for _, v := range testString {
+		c := byte(v)
+
+		switch {
+		case '0' <= c && c <= '9':
+			fallthrough
+		case 'a' <= c && c <= 'f':
+			output = append(output, string(c))
+		default:
+			return nil, fmt.Errorf("Unexpected character in path: %x", c)
+		}
+	}
+
+	// Recover the last value
+	if lastValue != "" {
+		output = append(output, lastValue)
+	}
+
+	return output, nil
+}
+
+// getHexIndex returns to you the integer 0 - 15 equivalent to your
+// string character if applicable, or -1 otherwise.
+func getHexIndex(s string) int {
+	if len(s) != 1 {
+		return -1
+	}
+
+	c := byte(s[0])
+	switch {
+	case '0' <= c && c <= '9':
+		return int(c - '0')
+	case 'a' <= c && c <= 'f':
+		return int(c - 'a' + 10)
+	}
+
+	return -1
 }
