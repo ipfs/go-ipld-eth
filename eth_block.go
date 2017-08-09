@@ -182,13 +182,45 @@ func (b *EthBlock) Resolve(p []string) (interface{}, []string, error) {
 
 	switch p[0] {
 	case "bloom":
-		return b.Bloom, p[1:], nil
+		return b.Bloom, nil, nil // should not send the rest: You reached an end here.
 	case "coinbase":
-		return b.Coinbase, p[1:], nil
+		return b.Coinbase, nil, nil
+	case "difficulty":
+		return b.Difficulty, nil, nil
+	case "extra":
+		return fmt.Sprintf("0x%x", b.Extra), nil, nil // This is a []byte. By default they are marshalled into Base64.
+	case "gaslimit":
+		return b.GasLimit, nil, nil
+	case "gasused":
+		return b.GasUsed, nil, nil
+	case "mixdigest":
+		return b.MixDigest, nil, nil
+	case "nonce":
+		return b.Nonce, nil, nil
+	case "number":
+		return b.Number, nil, nil
 	case "parent":
 		return &node.Link{Cid: commonHashToCid(MEthBlock, b.ParentHash)}, p[1:], nil
+	case "parentHash":
+		return b.ParentHash.Hex(), nil, nil
+	case "receipts":
+		return &node.Link{Cid: commonHashToCid(MEthTxReceiptTrie, b.ReceiptHash)}, p[1:], nil
+	case "receiptHash":
+		return b.ReceiptHash.Hex(), nil, nil
+	case "root":
+		return &node.Link{Cid: commonHashToCid(MEthStateTrie, b.Root)}, p[1:], nil
+	case "rootHash":
+		return b.Root.Hex(), nil, nil
+	case "time":
+		return b.Time, nil, nil
 	case "tx":
 		return &node.Link{Cid: commonHashToCid(MEthTxTrie, b.TxHash)}, p[1:], nil
+	case "txHash":
+		return b.TxHash.Hex(), nil, nil
+	case "uncles":
+		return &node.Link{Cid: commonHashToCid(MEthBlockList, b.UncleHash)}, p[1:], nil
+	case "uncleHash":
+		return b.UncleHash.Hex(), nil, nil
 	default:
 		return nil, nil, fmt.Errorf("no such link")
 	}
@@ -197,7 +229,28 @@ func (b *EthBlock) Resolve(p []string) (interface{}, []string, error) {
 // Tree lists all paths within the object under 'path', and up to the given depth.
 // To list the entire object (similar to `find .`) pass "" and -1
 func (b *EthBlock) Tree(p string, depth int) []string {
-	return nil
+	return []string{
+		"time",
+		"bloom",
+		"coinbase",
+		"difficulty",
+		"extra",
+		"gaslimit",
+		"gasused",
+		"mixdigest",
+		"nonce",
+		"number",
+		"parent",
+		"parentHash",
+		"receipts",
+		"receiptHash",
+		"root",
+		"rootHash",
+		"tx",
+		"txHash",
+		"uncles",
+		"uncleHash",
+	}
 }
 
 // ResolveLink is a helper function that allows easier traversal of links through blocks
@@ -254,7 +307,7 @@ func (b *EthBlock) MarshalJSON() ([]byte, error) {
 		"bloom":       b.Bloom,
 		"coinbase":    b.Coinbase,
 		"difficulty":  b.Difficulty,
-		"extra":       b.Extra,
+		"extra":       fmt.Sprintf("0x%x", b.Extra),
 		"gaslimit":    b.GasLimit,
 		"gasused":     b.GasUsed,
 		"mixdigest":   b.MixDigest,

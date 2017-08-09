@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+
 	block "github.com/ipfs/go-block-format"
 	node "github.com/ipfs/go-ipld-format"
 )
@@ -55,11 +55,29 @@ func TestDecodeBlockHeader(t *testing.T) {
 	testEthBlockFields(ethBlock, t)
 }
 
+func TestEthBlockString(t *testing.T) {
+	ethBlock := prepareDecodedEthBlock("test_data/eth-block-header-rlp-999999", t)
+
+	if ethBlock.String() != "<EthBlock z43AaGF4uHSY4waU68L3DLUKHZP7yfZoo6QbLmid5HomZ4WtbWw>" {
+		t.Fatalf("Wrong String()")
+	}
+}
+
+func TestEthBlockLoggable(t *testing.T) {
+	ethBlock := prepareDecodedEthBlock("test_data/eth-block-header-rlp-999999", t)
+
+	l := ethBlock.Loggable()
+	if _, ok := l["type"]; !ok {
+		t.Fatal("Loggable map expected the field 'type'")
+	}
+
+	if l["type"] != "eth-block" {
+		t.Fatal("Wrong Loggable 'type' value")
+	}
+}
+
 func TestEthBlockJSONMarshal(t *testing.T) {
-	// Get the block from the datastore and decode it.
-	storedEthBlock := prepareStoredEthBlock("test_data/eth-block-header-rlp-999999", t)
-	ethBlock, err := DecodeEthBlock(storedEthBlock.Cid(), storedEthBlock.RawData())
-	checkError(err, t)
+	ethBlock := prepareDecodedEthBlock("test_data/eth-block-header-rlp-999999", t)
 
 	jsonOutput, err := ethBlock.MarshalJSON()
 	checkError(err, t)
@@ -79,7 +97,7 @@ func TestEthBlockJSONMarshal(t *testing.T) {
 	if parseFloat(data["difficulty"]) != "12555463106190" {
 		t.Fatal("Wrong Difficulty")
 	}
-	if data["extra"] != "14MBAwOER2V0aIdnbzEuNC4yhWxpbnV4" {
+	if data["extra"] != "0xd783010303844765746887676f312e342e32856c696e7578" {
 		t.Fatal("Wrong Extra")
 	}
 	if parseFloat(data["gaslimit"]) != "3141592" {
@@ -133,10 +151,7 @@ func TestEthBlockJSONMarshal(t *testing.T) {
 }
 
 func TestEthBlockLinks(t *testing.T) {
-	// Get the block from the datastore and decode it.
-	storedEthBlock := prepareStoredEthBlock("test_data/eth-block-header-rlp-999999", t)
-	ethBlock, err := DecodeEthBlock(storedEthBlock.Cid(), storedEthBlock.RawData())
-	checkError(err, t)
+	ethBlock := prepareDecodedEthBlock("test_data/eth-block-header-rlp-999999", t)
 
 	links := ethBlock.Links()
 	if links[0].Cid.String() != "z43AaGF6wP6uoLFEauru5oLK5JS5MGfNuGDK1xWEpQK4BqkJkL3" {
@@ -156,11 +171,36 @@ func TestEthBlockLinks(t *testing.T) {
 	}
 }
 
-func TestEthBlockResolveBloom(t *testing.T) {
-	// Get the block from the datastore and decode it.
-	storedEthBlock := prepareStoredEthBlock("test_data/eth-block-header-rlp-999999", t)
-	ethBlock, err := DecodeEthBlock(storedEthBlock.Cid(), storedEthBlock.RawData())
+func TestEthBlockResolveEmptyPath(t *testing.T) {
+	ethBlock := prepareDecodedEthBlock("test_data/eth-block-header-rlp-999999", t)
+
+	obj, rest, err := ethBlock.Resolve([]string{})
 	checkError(err, t)
+	// Pointer comparison
+	if ethBlock != obj.(*EthBlock) {
+		t.Fatal("Should have returned the same eth-block object")
+	}
+
+	if len(rest) != 0 {
+		t.Fatal("Wrong rest of the path returned")
+	}
+}
+
+func TestEthBlockResolveNoSuchLink(t *testing.T) {
+	ethBlock := prepareDecodedEthBlock("test_data/eth-block-header-rlp-999999", t)
+
+	_, _, err := ethBlock.Resolve([]string{"wewonthavethisfieldever", "anything", "goes", "here"})
+	if err == nil {
+		t.Fatal("Should have failed with unknown field")
+	}
+
+	if err.Error() != "no such link" {
+		t.Fatal("Wrong error message")
+	}
+}
+
+func TestEthBlockResolveBloom(t *testing.T) {
+	ethBlock := prepareDecodedEthBlock("test_data/eth-block-header-rlp-999999", t)
 
 	obj, rest, err := ethBlock.Resolve([]string{"bloom", "anything", "goes", "here"})
 	checkError(err, t)
@@ -171,73 +211,202 @@ func TestEthBlockResolveBloom(t *testing.T) {
 		t.Fatal("Wrong Bloom")
 	}
 
-	if rest[2] != "here" {
+	if len(rest) != 0 {
 		t.Fatal("Wrong rest of the path returned")
 	}
 }
 
-func TestEthBlockResolveCoinbase(t *testing.T) {
-	// Get the block from the datastore and decode it.
-	storedEthBlock := prepareStoredEthBlock("test_data/eth-block-header-rlp-999999", t)
-	ethBlock, err := DecodeEthBlock(storedEthBlock.Cid(), storedEthBlock.RawData())
-	checkError(err, t)
+func TestEthBlockResolveNonLinkFields(t *testing.T) {
+	ethBlock := prepareDecodedEthBlock("test_data/eth-block-header-rlp-999999", t)
 
-	obj, rest, err := ethBlock.Resolve([]string{"coinbase", "anything", "goes", "here"})
-	checkError(err, t)
-
-	// The marshaler of common.Address should output it as 0x
-	coinbaseInText := fmt.Sprintf("%x", obj.(common.Address))
-	if coinbaseInText != "52bc44d5378309ee2abf1539bf71de1b7d7be3b5" {
-		t.Fatal("Wrong Coinbase")
+	testCases := map[string][]string{
+		"coinbase":    []string{"%x", "52bc44d5378309ee2abf1539bf71de1b7d7be3b5"},
+		"difficulty":  []string{"%s", "12555463106190"},
+		"extra":       []string{"%s", "0xd783010303844765746887676f312e342e32856c696e7578"},
+		"gaslimit":    []string{"%s", "3141592"},
+		"gasused":     []string{"%s", "231000"},
+		"mixdigest":   []string{"%x", "5b10f4a08a6c209d426f6158bd24b574f4f7b7aa0099c67c14a1f693b4dd04d0"},
+		"nonce":       []string{"%x", "f491f46b60fe04b3"},
+		"number":      []string{"%s", "999999"},
+		"parentHash":  []string{"%s", "0xd33c9dde9fff0ebaa6e71e8b26d2bda15ccf111c7af1b633698ac847667f0fb4"},
+		"receiptHash": []string{"%s", "0x7fa0f6ca2a01823208d80801edad37e3e3a003b55c89319b45eb1f97862ad229"},
+		"rootHash":    []string{"%s", "0xed98aa4b5b19c82fb35364f08508ae0a6dec665fa57663dca94c5d70554cde10"},
+		"time":        []string{"%s", "1455404037"},
+		"txHash":      []string{"%s", "0x447cbd8c48f498a6912b10831cdff59c7fbfcbbe735ca92883d4fa06dcd7ae54"},
+		"uncleHash":   []string{"%s", "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"},
 	}
 
-	if rest[2] != "here" {
-		t.Fatal("Wrong rest of the path returned")
+	for field, value := range testCases {
+		obj, rest, err := ethBlock.Resolve([]string{field, "anything", "goes", "here"})
+		checkError(err, t)
+
+		format := value[0]
+		result := value[1]
+		if fmt.Sprintf(format, obj) != result {
+			t.Fatalf("Wrong %v", field)
+		}
+
+		if len(rest) != 0 {
+			t.Fatal("Wrong rest of the path returned")
+		}
 	}
 }
 
-// TODO
-// Test for the following elements resolving
+func TestEthBlockResolveLinkFields(t *testing.T) {
+	ethBlock := prepareDecodedEthBlock("test_data/eth-block-header-rlp-999999", t)
+
+	testCases := map[string]string{
+		"parent":   "z43AaGF6wP6uoLFEauru5oLK5JS5MGfNuGDK1xWEpQK4BqkJkL3",
+		"receipts": "z44vkPhhDSTXPAswvC1rdDunzkgZ7FgAAnhGQtNDNDk9m9N2BZA",
+		"root":     "z45oqTSAZvPiiPV8hMZDH5fi4NkaAkMYTJC6PmaeWBmYUpbMpoh",
+		"tx":       "z443fKyHHMwVy13VXtD4fdRcUXSqkr79Q5E8hcmEravVBq3Dc51",
+		"uncles":   "z43c7o74hjCAqnyneWetkyXU2i5KuGQLbYfVWZMvJMG4VTYABtz",
+	}
+
+	for field, result := range testCases {
+		obj, rest, err := ethBlock.Resolve([]string{field, "anything", "goes", "here"})
+		checkError(err, t)
+
+		lnk, ok := obj.(*node.Link)
+		if !ok {
+			t.Fatal("Returned object is not a link")
+		}
+
+		if lnk.Cid.String() != result {
+			t.Fatalf("Wrong %s", field)
+		}
+
+		for i, p := range []string{"anything", "goes", "here"} {
+			if rest[i] != p {
+				t.Fatal("Wrong rest of the path returned")
+			}
+		}
+	}
+}
+
+func TestEThBlockTree(t *testing.T) {
+	ethBlock := prepareDecodedEthBlock("test_data/eth-block-header-rlp-999999", t)
+
+	tree := ethBlock.Tree("ignoring these parameters for now?", 0)
+	lookupElements := map[string]interface{}{
+		"bloom":       nil,
+		"coinbase":    nil,
+		"difficulty":  nil,
+		"extra":       nil,
+		"gaslimit":    nil,
+		"gasused":     nil,
+		"mixdigest":   nil,
+		"nonce":       nil,
+		"number":      nil,
+		"parent":      nil,
+		"parentHash":  nil,
+		"receipts":    nil,
+		"receiptHash": nil,
+		"root":        nil,
+		"rootHash":    nil,
+		"time":        nil,
+		"tx":          nil,
+		"txHash":      nil,
+		"uncles":      nil,
+		"uncleHash":   nil,
+	}
+
+	if len(tree) != len(lookupElements) {
+		t.Fatalf("Wrong number of elements. Got %d. Expecting %d", len(tree), len(lookupElements))
+	}
+
+	for _, te := range tree {
+		if _, ok := lookupElements[te]; !ok {
+			t.Fatalf("Unexpected Element: %v", te)
+		}
+	}
+}
+
 /*
-   difficulty
-   extra
-   gaslimit
-   gasused
-   mixdigest
-   nonce
-   number
-   parentHash
-   receiptHash
-   receipts
-   root
-   rootHash
-   time
-   tx
-   txHash
-   uncleHash
-   uncles
+  The two functions above: TestEthBlockResolveNonLinkFields and
+  TestEthBlockResolveLinkFields did all the heavy lifting. Then, we will
+  just test two use cases.
 */
+func TestEthBlockResolveLinksBadLink(t *testing.T) {
+	ethBlock := prepareDecodedEthBlock("test_data/eth-block-header-rlp-999999", t)
 
-func TestEthBlockResolveParent(t *testing.T) {
-	// Get the block from the datastore and decode it.
-	storedEthBlock := prepareStoredEthBlock("test_data/eth-block-header-rlp-999999", t)
-	ethBlock, err := DecodeEthBlock(storedEthBlock.Cid(), storedEthBlock.RawData())
-	checkError(err, t)
+	obj, rest, err := ethBlock.ResolveLink([]string{"buy", "me", "a", "pony"})
+	if obj != nil {
+		t.Fatalf("Expected obj to be nil")
+	}
+	if rest != nil {
+		t.Fatal("Expected rest to be nil")
+	}
+	if err.Error() != "no such link" {
+		t.Fatal("Expected error")
+	}
+}
 
-	obj, rest, err := ethBlock.Resolve([]string{"parent", "rest", "of", "the", "path"})
-	checkError(err, t)
+func TestEthBlockResolveLinksGoodLink(t *testing.T) {
+	ethBlock := prepareDecodedEthBlock("test_data/eth-block-header-rlp-999999", t)
 
-	lnk, ok := obj.(*node.Link)
-	if !ok {
-		t.Fatal("Returned object is not a link")
+	obj, rest, err := ethBlock.ResolveLink([]string{"tx", "0", "0", "0"})
+	if obj == nil {
+		t.Fatalf("Expected valid *node.Link obj to be returned")
 	}
 
-	if lnk.Cid.String() != "z43AaGF6wP6uoLFEauru5oLK5JS5MGfNuGDK1xWEpQK4BqkJkL3" {
-		t.Fatal("Wrong parent")
+	if rest == nil {
+		t.Fatal("Expected rest to be returned")
+	}
+	for i, p := range []string{"0", "0", "0"} {
+		if rest[i] != p {
+			t.Fatal("Wrong rest of the path returned")
+		}
 	}
 
-	if rest[3] != "path" {
-		t.Fatal("Wrong rest of the path returned")
+	if err != nil {
+		t.Fatal("Non error expected")
+	}
+}
+
+/*
+  These functions below should go away
+  We are working on test coverage anyways...
+*/
+func TestEthBlockCopy(t *testing.T) {
+	ethBlock := prepareDecodedEthBlock("test_data/eth-block-header-rlp-999999", t)
+
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Fatal("Expected panic")
+		}
+		if r != "dont use this yet" {
+			t.Fatal("Expected panic message 'dont use this yet'")
+		}
+	}()
+
+	_ = ethBlock.Copy()
+}
+
+func TestEthBlockStat(t *testing.T) {
+	ethBlock := prepareDecodedEthBlock("test_data/eth-block-header-rlp-999999", t)
+
+	obj, err := ethBlock.Stat()
+	if obj == nil {
+		t.Fatal("Expected a not null object node.NodeStat")
+	}
+
+	if err != nil {
+		t.Fatal("Expected a nil error")
+	}
+}
+
+func TestEthBlockSize(t *testing.T) {
+	ethBlock := prepareDecodedEthBlock("test_data/eth-block-header-rlp-999999", t)
+
+	size, err := ethBlock.Size()
+	if size != 0 {
+		t.Fatal("Expected a size equal to 0")
+	}
+
+	if err != nil {
+		t.Fatal("Expected a nil error")
 	}
 }
 
@@ -279,6 +448,17 @@ func prepareStoredEthBlock(filepath string, t *testing.T) *block.BasicBlock {
 	checkError(err, t)
 
 	return storedEthBlock
+}
+
+// prepareDecodedEthBlock is more complex than function above, as it stores a
+// basic block and RLP-decodes it
+func prepareDecodedEthBlock(filepath string, t *testing.T) *EthBlock {
+	// Get the block from the datastore and decode it.
+	storedEthBlock := prepareStoredEthBlock("test_data/eth-block-header-rlp-999999", t)
+	ethBlock, err := DecodeEthBlock(storedEthBlock.Cid(), storedEthBlock.RawData())
+	checkError(err, t)
+
+	return ethBlock
 }
 
 // testEthBlockFields checks the fields of EthBlock one by one.
