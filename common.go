@@ -25,7 +25,7 @@ const (
 	MEthStorageTrie     = 0x98
 )
 
-// rawdataToCid takes the desired coded and a slice of bytes
+// rawdataToCid takes the desired codec and a slice of bytes
 // and returns the proper cid of the object.
 func rawdataToCid(codec uint64, rawdata []byte) *cid.Cid {
 	c, err := cid.Prefix{
