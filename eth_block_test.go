@@ -44,6 +44,24 @@ func TestBlockBodyJsonParsing(t *testing.T) {
 	testEthBlockFields(output, t)
 }
 
+func TestEthBlockProcessTransactionsPanic(t *testing.T) {
+	// This one has ONE byte different in ONE transaction
+	fi, err := os.Open("test_data/error-tx-eth-block-body-json-999999")
+	checkError(err, t)
+
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Fatal("Expected panic")
+		}
+		if r != "Wrong transaction hash computed!" {
+			t.Fatal("Expected panic message 'Wrong transaction hash computed!'")
+		}
+	}()
+
+	FromBlockJSON(fi)
+}
+
 // TestDecodeBlockHeader should work for both inputs (block header and block body)
 // as what we are storing is just the block header
 func TestDecodeBlockHeader(t *testing.T) {
