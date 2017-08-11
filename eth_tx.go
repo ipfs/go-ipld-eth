@@ -99,6 +99,10 @@ func (t *EthTx) Resolve(p []string) (interface{}, []string, error) {
 		return t, nil, nil
 	}
 
+	if len(p) > 1 {
+		return nil, nil, fmt.Errorf("unexpected path elements past %s", p[0])
+	}
+
 	switch p[0] {
 	case "nonce":
 		return t.Nonce(), p[1:], nil
