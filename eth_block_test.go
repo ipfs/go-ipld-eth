@@ -220,7 +220,7 @@ func TestEthBlockResolveNoSuchLink(t *testing.T) {
 func TestEthBlockResolveBloom(t *testing.T) {
 	ethBlock := prepareDecodedEthBlock("test_data/eth-block-header-rlp-999999", t)
 
-	obj, rest, err := ethBlock.Resolve([]string{"bloom", "anything", "goes", "here"})
+	obj, rest, err := ethBlock.Resolve([]string{"bloom"})
 	checkError(err, t)
 
 	// The marshaler of types.Bloom should output it as 0x
@@ -231,6 +231,23 @@ func TestEthBlockResolveBloom(t *testing.T) {
 
 	if len(rest) != 0 {
 		t.Fatal("Wrong rest of the path returned")
+	}
+}
+
+func TestEthBlockResolveBloomExtraPathElements(t *testing.T) {
+	ethBlock := prepareDecodedEthBlock("test_data/eth-block-header-rlp-999999", t)
+
+	obj, rest, err := ethBlock.Resolve([]string{"bloom", "unexpected", "extra", "elements"})
+	if obj != nil {
+		t.Fatal("Returned obj should be nil")
+	}
+
+	if rest != nil {
+		t.Fatal("Returned rest should be nil")
+	}
+
+	if err.Error() != "unexpected path elements past bloom" {
+		t.Fatal("Wrong error")
 	}
 }
 
@@ -255,7 +272,7 @@ func TestEthBlockResolveNonLinkFields(t *testing.T) {
 	}
 
 	for field, value := range testCases {
-		obj, rest, err := ethBlock.Resolve([]string{field, "anything", "goes", "here"})
+		obj, rest, err := ethBlock.Resolve([]string{field})
 		checkError(err, t)
 
 		format := value[0]
@@ -267,6 +284,43 @@ func TestEthBlockResolveNonLinkFields(t *testing.T) {
 		if len(rest) != 0 {
 			t.Fatal("Wrong rest of the path returned")
 		}
+	}
+}
+
+func TestEthBlockResolveNonLinkFieldsExtraPathElements(t *testing.T) {
+	ethBlock := prepareDecodedEthBlock("test_data/eth-block-header-rlp-999999", t)
+
+	testCases := []string{
+		"coinbase",
+		"difficulty",
+		"extra",
+		"gaslimit",
+		"gasused",
+		"mixdigest",
+		"nonce",
+		"number",
+		"parentHash",
+		"receiptHash",
+		"rootHash",
+		"time",
+		"txHash",
+		"uncleHash",
+	}
+
+	for _, field := range testCases {
+		obj, rest, err := ethBlock.Resolve([]string{field, "unexpected", "extra", "elements"})
+		if obj != nil {
+			t.Fatal("Returned obj should be nil")
+		}
+
+		if rest != nil {
+			t.Fatal("Returned rest should be nil")
+		}
+
+		if err.Error() != "unexpected path elements past "+field {
+			t.Fatal("Wrong error")
+		}
+
 	}
 }
 

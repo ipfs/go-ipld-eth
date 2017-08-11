@@ -180,9 +180,33 @@ func (b *EthBlock) Resolve(p []string) (interface{}, []string, error) {
 		return b, nil, nil
 	}
 
+	// Sanity check for terminal paths
+	nonLinkPaths := map[string]interface{}{
+		"bloom":       nil,
+		"coinbase":    nil,
+		"difficulty":  nil,
+		"extra":       nil,
+		"gaslimit":    nil,
+		"gasused":     nil,
+		"mixdigest":   nil,
+		"nonce":       nil,
+		"number":      nil,
+		"parentHash":  nil,
+		"receiptHash": nil,
+		"rootHash":    nil,
+		"time":        nil,
+		"txHash":      nil,
+		"uncleHash":   nil,
+	}
+	if _, ok := nonLinkPaths[p[0]]; ok {
+		if len(p) > 1 {
+			return nil, nil, fmt.Errorf("unexpected path elements past %s", p[0])
+		}
+	}
+
 	switch p[0] {
 	case "bloom":
-		return b.Bloom, nil, nil // should not send the rest: You reached an end here.
+		return b.Bloom, nil, nil
 	case "coinbase":
 		return b.Coinbase, nil, nil
 	case "difficulty":
