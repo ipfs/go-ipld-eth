@@ -93,7 +93,7 @@ func TestTxTrieResolveBranchChildren(t *testing.T) {
 }
 
 func TestTxTrieJSONMarshalBranch(t *testing.T) {
-
+	// AQUI VOY
 }
 
 ///// LATER
