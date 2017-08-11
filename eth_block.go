@@ -253,6 +253,10 @@ func (b *EthBlock) Resolve(p []string) (interface{}, []string, error) {
 // Tree lists all paths within the object under 'path', and up to the given depth.
 // To list the entire object (similar to `find .`) pass "" and -1
 func (b *EthBlock) Tree(p string, depth int) []string {
+	if p != "" || depth == 0 {
+		return nil
+	}
+
 	return []string{
 		"time",
 		"bloom",

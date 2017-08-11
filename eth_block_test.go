@@ -356,10 +356,29 @@ func TestEthBlockResolveLinkFields(t *testing.T) {
 	}
 }
 
+func TestEthBlockTreeBadParams(t *testing.T) {
+	ethBlock := prepareDecodedEthBlock("test_data/eth-block-header-rlp-999999", t)
+
+	tree := ethBlock.Tree("non-empty-string", 0)
+	if tree != nil {
+		t.Fatal("Expected nil to be returned")
+	}
+
+	tree = ethBlock.Tree("non-empty-string", 1)
+	if tree != nil {
+		t.Fatal("Expected nil to be returned")
+	}
+
+	tree = ethBlock.Tree("", 0)
+	if tree != nil {
+		t.Fatal("Expected nil to be returned")
+	}
+}
+
 func TestEThBlockTree(t *testing.T) {
 	ethBlock := prepareDecodedEthBlock("test_data/eth-block-header-rlp-999999", t)
 
-	tree := ethBlock.Tree("ignoring these parameters for now?", 0)
+	tree := ethBlock.Tree("", 1)
 	lookupElements := map[string]interface{}{
 		"bloom":       nil,
 		"coinbase":    nil,
