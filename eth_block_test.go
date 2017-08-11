@@ -136,32 +136,17 @@ func TestEthBlockJSONMarshal(t *testing.T) {
 	if parseMapElement(data["parent"]) != "z43AaGF6wP6uoLFEauru5oLK5JS5MGfNuGDK1xWEpQK4BqkJkL3" {
 		t.Fatal("Wrong Parent cid")
 	}
-	if data["parentHash"] != "0xd33c9dde9fff0ebaa6e71e8b26d2bda15ccf111c7af1b633698ac847667f0fb4" {
-		t.Fatal("Wrong Parent hash")
-	}
-	if data["receiptHash"] != "0x7fa0f6ca2a01823208d80801edad37e3e3a003b55c89319b45eb1f97862ad229" {
-		t.Fatal("Wrong Receipt hash")
-	}
 	if parseMapElement(data["receipts"]) != "z44vkPhhDSTXPAswvC1rdDunzkgZ7FgAAnhGQtNDNDk9m9N2BZA" {
 		t.Fatal("Wrong Receipt root cid")
 	}
 	if parseMapElement(data["root"]) != "z45oqTSAZvPiiPV8hMZDH5fi4NkaAkMYTJC6PmaeWBmYUpbMpoh" {
 		t.Fatal("Wrong root hash cid")
 	}
-	if data["rootHash"] != "0xed98aa4b5b19c82fb35364f08508ae0a6dec665fa57663dca94c5d70554cde10" {
-		t.Fatal("Wrong Root Hash")
-	}
 	if parseFloat(data["time"]) != "1455404037" {
 		t.Fatal("Wrong Time")
 	}
 	if parseMapElement(data["tx"]) != "z443fKyHHMwVy13VXtD4fdRcUXSqkr79Q5E8hcmEravVBq3Dc51" {
 		t.Fatal("Wrong Tx root cid")
-	}
-	if data["txHash"] != "0x447cbd8c48f498a6912b10831cdff59c7fbfcbbe735ca92883d4fa06dcd7ae54" {
-		t.Fatal("Wrong Tx root hash")
-	}
-	if data["uncleHash"] != "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347" {
-		t.Fatal("Wrong Uncle hash")
 	}
 	if parseMapElement(data["uncles"]) != "z43c7o74hjCAqnyneWetkyXU2i5KuGQLbYfVWZMvJMG4VTYABtz" {
 		t.Fatal("Wrong Uncle hash cid")
@@ -194,7 +179,7 @@ func TestEthBlockResolveEmptyPath(t *testing.T) {
 
 	obj, rest, err := ethBlock.Resolve([]string{})
 	checkError(err, t)
-	// Pointer comparison
+
 	if ethBlock != obj.(*EthBlock) {
 		t.Fatal("Should have returned the same eth-block object")
 	}
@@ -255,20 +240,15 @@ func TestEthBlockResolveNonLinkFields(t *testing.T) {
 	ethBlock := prepareDecodedEthBlock("test_data/eth-block-header-rlp-999999", t)
 
 	testCases := map[string][]string{
-		"coinbase":    []string{"%x", "52bc44d5378309ee2abf1539bf71de1b7d7be3b5"},
-		"difficulty":  []string{"%s", "12555463106190"},
-		"extra":       []string{"%s", "0xd783010303844765746887676f312e342e32856c696e7578"},
-		"gaslimit":    []string{"%s", "3141592"},
-		"gasused":     []string{"%s", "231000"},
-		"mixdigest":   []string{"%x", "5b10f4a08a6c209d426f6158bd24b574f4f7b7aa0099c67c14a1f693b4dd04d0"},
-		"nonce":       []string{"%x", "f491f46b60fe04b3"},
-		"number":      []string{"%s", "999999"},
-		"parentHash":  []string{"%s", "0xd33c9dde9fff0ebaa6e71e8b26d2bda15ccf111c7af1b633698ac847667f0fb4"},
-		"receiptHash": []string{"%s", "0x7fa0f6ca2a01823208d80801edad37e3e3a003b55c89319b45eb1f97862ad229"},
-		"rootHash":    []string{"%s", "0xed98aa4b5b19c82fb35364f08508ae0a6dec665fa57663dca94c5d70554cde10"},
-		"time":        []string{"%s", "1455404037"},
-		"txHash":      []string{"%s", "0x447cbd8c48f498a6912b10831cdff59c7fbfcbbe735ca92883d4fa06dcd7ae54"},
-		"uncleHash":   []string{"%s", "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"},
+		"coinbase":   []string{"%x", "52bc44d5378309ee2abf1539bf71de1b7d7be3b5"},
+		"difficulty": []string{"%s", "12555463106190"},
+		"extra":      []string{"%s", "0xd783010303844765746887676f312e342e32856c696e7578"},
+		"gaslimit":   []string{"%s", "3141592"},
+		"gasused":    []string{"%s", "231000"},
+		"mixdigest":  []string{"%x", "5b10f4a08a6c209d426f6158bd24b574f4f7b7aa0099c67c14a1f693b4dd04d0"},
+		"nonce":      []string{"%x", "f491f46b60fe04b3"},
+		"number":     []string{"%s", "999999"},
+		"time":       []string{"%s", "1455404037"},
 	}
 
 	for field, value := range testCases {
@@ -299,12 +279,7 @@ func TestEthBlockResolveNonLinkFieldsExtraPathElements(t *testing.T) {
 		"mixdigest",
 		"nonce",
 		"number",
-		"parentHash",
-		"receiptHash",
-		"rootHash",
 		"time",
-		"txHash",
-		"uncleHash",
 	}
 
 	for _, field := range testCases {
@@ -380,26 +355,21 @@ func TestEThBlockTree(t *testing.T) {
 
 	tree := ethBlock.Tree("", 1)
 	lookupElements := map[string]interface{}{
-		"bloom":       nil,
-		"coinbase":    nil,
-		"difficulty":  nil,
-		"extra":       nil,
-		"gaslimit":    nil,
-		"gasused":     nil,
-		"mixdigest":   nil,
-		"nonce":       nil,
-		"number":      nil,
-		"parent":      nil,
-		"parentHash":  nil,
-		"receipts":    nil,
-		"receiptHash": nil,
-		"root":        nil,
-		"rootHash":    nil,
-		"time":        nil,
-		"tx":          nil,
-		"txHash":      nil,
-		"uncles":      nil,
-		"uncleHash":   nil,
+		"bloom":      nil,
+		"coinbase":   nil,
+		"difficulty": nil,
+		"extra":      nil,
+		"gaslimit":   nil,
+		"gasused":    nil,
+		"mixdigest":  nil,
+		"nonce":      nil,
+		"number":     nil,
+		"parent":     nil,
+		"receipts":   nil,
+		"root":       nil,
+		"time":       nil,
+		"tx":         nil,
+		"uncles":     nil,
 	}
 
 	if len(tree) != len(lookupElements) {

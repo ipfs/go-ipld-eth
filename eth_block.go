@@ -182,21 +182,16 @@ func (b *EthBlock) Resolve(p []string) (interface{}, []string, error) {
 
 	// Sanity check for terminal paths
 	nonLinkPaths := map[string]interface{}{
-		"bloom":       nil,
-		"coinbase":    nil,
-		"difficulty":  nil,
-		"extra":       nil,
-		"gaslimit":    nil,
-		"gasused":     nil,
-		"mixdigest":   nil,
-		"nonce":       nil,
-		"number":      nil,
-		"parentHash":  nil,
-		"receiptHash": nil,
-		"rootHash":    nil,
-		"time":        nil,
-		"txHash":      nil,
-		"uncleHash":   nil,
+		"bloom":      nil,
+		"coinbase":   nil,
+		"difficulty": nil,
+		"extra":      nil,
+		"gaslimit":   nil,
+		"gasused":    nil,
+		"mixdigest":  nil,
+		"nonce":      nil,
+		"number":     nil,
+		"time":       nil,
 	}
 	if _, ok := nonLinkPaths[p[0]]; ok {
 		if len(p) > 1 {
@@ -225,26 +220,16 @@ func (b *EthBlock) Resolve(p []string) (interface{}, []string, error) {
 		return b.Number, nil, nil
 	case "parent":
 		return &node.Link{Cid: commonHashToCid(MEthBlock, b.ParentHash)}, p[1:], nil
-	case "parentHash":
-		return b.ParentHash.Hex(), nil, nil
 	case "receipts":
 		return &node.Link{Cid: commonHashToCid(MEthTxReceiptTrie, b.ReceiptHash)}, p[1:], nil
-	case "receiptHash":
-		return b.ReceiptHash.Hex(), nil, nil
 	case "root":
 		return &node.Link{Cid: commonHashToCid(MEthStateTrie, b.Root)}, p[1:], nil
-	case "rootHash":
-		return b.Root.Hex(), nil, nil
 	case "time":
 		return b.Time, nil, nil
 	case "tx":
 		return &node.Link{Cid: commonHashToCid(MEthTxTrie, b.TxHash)}, p[1:], nil
-	case "txHash":
-		return b.TxHash.Hex(), nil, nil
 	case "uncles":
 		return &node.Link{Cid: commonHashToCid(MEthBlockList, b.UncleHash)}, p[1:], nil
-	case "uncleHash":
-		return b.UncleHash.Hex(), nil, nil
 	default:
 		return nil, nil, fmt.Errorf("no such link")
 	}
@@ -269,15 +254,10 @@ func (b *EthBlock) Tree(p string, depth int) []string {
 		"nonce",
 		"number",
 		"parent",
-		"parentHash",
 		"receipts",
-		"receiptHash",
 		"root",
-		"rootHash",
 		"tx",
-		"txHash",
 		"uncles",
-		"uncleHash",
 	}
 }
 
@@ -331,26 +311,21 @@ func (b *EthBlock) Size() (uint64, error) {
 // hex hash, allowing the user to simplify external queries.
 func (b *EthBlock) MarshalJSON() ([]byte, error) {
 	out := map[string]interface{}{
-		"time":        b.Time,
-		"bloom":       b.Bloom,
-		"coinbase":    b.Coinbase,
-		"difficulty":  b.Difficulty,
-		"extra":       fmt.Sprintf("0x%x", b.Extra),
-		"gaslimit":    b.GasLimit,
-		"gasused":     b.GasUsed,
-		"mixdigest":   b.MixDigest,
-		"nonce":       b.Nonce,
-		"number":      b.Number,
-		"parent":      commonHashToCid(MEthBlock, b.ParentHash),
-		"parentHash":  b.ParentHash.Hex(),
-		"receipts":    commonHashToCid(MEthTxReceiptTrie, b.ReceiptHash),
-		"receiptHash": b.ReceiptHash.Hex(),
-		"root":        commonHashToCid(MEthStateTrie, b.Root),
-		"rootHash":    b.Root.Hex(),
-		"tx":          commonHashToCid(MEthTxTrie, b.TxHash),
-		"txHash":      b.TxHash.Hex(),
-		"uncles":      commonHashToCid(MEthBlockList, b.UncleHash),
-		"uncleHash":   b.UncleHash.Hex(),
+		"time":       b.Time,
+		"bloom":      b.Bloom,
+		"coinbase":   b.Coinbase,
+		"difficulty": b.Difficulty,
+		"extra":      fmt.Sprintf("0x%x", b.Extra),
+		"gaslimit":   b.GasLimit,
+		"gasused":    b.GasUsed,
+		"mixdigest":  b.MixDigest,
+		"nonce":      b.Nonce,
+		"number":     b.Number,
+		"parent":     commonHashToCid(MEthBlock, b.ParentHash),
+		"receipts":   commonHashToCid(MEthTxReceiptTrie, b.ReceiptHash),
+		"root":       commonHashToCid(MEthStateTrie, b.Root),
+		"tx":         commonHashToCid(MEthTxTrie, b.TxHash),
+		"uncles":     commonHashToCid(MEthBlockList, b.UncleHash),
 	}
 	return json.Marshal(out)
 }
