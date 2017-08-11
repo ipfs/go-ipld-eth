@@ -124,6 +124,10 @@ func (t *EthTx) Resolve(p []string) (interface{}, []string, error) {
 // Tree lists all paths within the object under 'path', and up to the given depth.
 // To list the entire object (similar to `find .`) pass "" and -1
 func (t *EthTx) Tree(p string, depth int) []string {
+	if p != "" || depth == 0 {
+		return nil
+	}
+
 	return []string{"toAddress", "value", "data", "nonce", "gasPrice", "gas"}
 }
 
