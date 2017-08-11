@@ -73,8 +73,11 @@ func FromBlockRLP(r io.Reader) (*EthBlock, []*EthTx, []*EthTxTrie, error) {
 	}
 
 	// Process the found eth-tx objects
-	ethTxNodes, ethTxTrieNodes := processTransactions(decodedBlock.Transactions(),
+	ethTxNodes, ethTxTrieNodes, err := processTransactions(decodedBlock.Transactions(),
 		decodedBlock.Header().TxHash[:])
+	if err != nil {
+		return nil, nil, nil, err
+	}
 
 	return ethBlock, ethTxNodes, ethTxTrieNodes, nil
 }
@@ -97,15 +100,18 @@ func FromBlockJSON(r io.Reader) (*EthBlock, []*EthTx, []*EthTxTrie, error) {
 	}
 
 	// Process the found eth-tx objects
-	ethTxNodes, ethTxTrieNodes := processTransactions(obj.Result.Transactions,
+	ethTxNodes, ethTxTrieNodes, err := processTransactions(obj.Result.Transactions,
 		obj.Result.Header.TxHash[:])
+	if err != nil {
+		return nil, nil, nil, err
+	}
 
 	return ethBlock, ethTxNodes, ethTxTrieNodes, nil
 }
 
 // processTransactions will take the found transactions in a parsed block body
 // to return IPLD node slices for eth-tx and eth-tx-trie
-func processTransactions(txs []*types.Transaction, expectedTxRoot []byte) ([]*EthTx, []*EthTxTrie) {
+func processTransactions(txs []*types.Transaction, expectedTxRoot []byte) ([]*EthTx, []*EthTxTrie, error) {
 	var ethTxNodes []*EthTx
 	transactionTrie := newTxTrie()
 
@@ -116,11 +122,12 @@ func processTransactions(txs []*types.Transaction, expectedTxRoot []byte) ([]*Et
 	}
 
 	ethTxTrieNodes := transactionTrie.getNodes()
+
 	if !bytes.Equal(transactionTrie.rootHash(), expectedTxRoot) {
-		panic("Wrong transaction hash computed!")
+		return nil, nil, fmt.Errorf("Wrong transaction hash computed!")
 	}
 
-	return ethTxNodes, ethTxTrieNodes
+	return ethTxNodes, ethTxTrieNodes, nil
 }
 
 /*
