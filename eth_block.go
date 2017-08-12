@@ -187,24 +187,26 @@ func (b *EthBlock) Resolve(p []string) (interface{}, []string, error) {
 		return b, nil, nil
 	}
 
-	switch p[0] {
+	first, rest := p[0], p[1:]
+
+	switch first {
 	case "parent":
-		return &node.Link{Cid: commonHashToCid(MEthBlock, b.ParentHash)}, p[1:], nil
+		return &node.Link{Cid: commonHashToCid(MEthBlock, b.ParentHash)}, rest, nil
 	case "receipts":
-		return &node.Link{Cid: commonHashToCid(MEthTxReceiptTrie, b.ReceiptHash)}, p[1:], nil
+		return &node.Link{Cid: commonHashToCid(MEthTxReceiptTrie, b.ReceiptHash)}, rest, nil
 	case "root":
-		return &node.Link{Cid: commonHashToCid(MEthStateTrie, b.Root)}, p[1:], nil
+		return &node.Link{Cid: commonHashToCid(MEthStateTrie, b.Root)}, rest, nil
 	case "tx":
-		return &node.Link{Cid: commonHashToCid(MEthTxTrie, b.TxHash)}, p[1:], nil
+		return &node.Link{Cid: commonHashToCid(MEthTxTrie, b.TxHash)}, rest, nil
 	case "uncles":
-		return &node.Link{Cid: commonHashToCid(MEthBlockList, b.UncleHash)}, p[1:], nil
+		return &node.Link{Cid: commonHashToCid(MEthBlockList, b.UncleHash)}, rest, nil
 	}
 
 	if len(p) != 1 {
-		return nil, nil, fmt.Errorf("unexpected path elements past %s", p[0])
+		return nil, nil, fmt.Errorf("unexpected path elements past %s", first)
 	}
 
-	switch p[0] {
+	switch first {
 	case "bloom":
 		return b.Bloom, nil, nil
 	case "coinbase":
