@@ -187,23 +187,21 @@ func (b *EthBlock) Resolve(p []string) (interface{}, []string, error) {
 		return b, nil, nil
 	}
 
-	// Sanity check for terminal paths
-	nonLinkPaths := map[string]interface{}{
-		"bloom":      nil,
-		"coinbase":   nil,
-		"difficulty": nil,
-		"extra":      nil,
-		"gaslimit":   nil,
-		"gasused":    nil,
-		"mixdigest":  nil,
-		"nonce":      nil,
-		"number":     nil,
-		"time":       nil,
+	switch p[0] {
+	case "parent":
+		return &node.Link{Cid: commonHashToCid(MEthBlock, b.ParentHash)}, p[1:], nil
+	case "receipts":
+		return &node.Link{Cid: commonHashToCid(MEthTxReceiptTrie, b.ReceiptHash)}, p[1:], nil
+	case "root":
+		return &node.Link{Cid: commonHashToCid(MEthStateTrie, b.Root)}, p[1:], nil
+	case "tx":
+		return &node.Link{Cid: commonHashToCid(MEthTxTrie, b.TxHash)}, p[1:], nil
+	case "uncles":
+		return &node.Link{Cid: commonHashToCid(MEthBlockList, b.UncleHash)}, p[1:], nil
 	}
-	if _, ok := nonLinkPaths[p[0]]; ok {
-		if len(p) > 1 {
-			return nil, nil, fmt.Errorf("unexpected path elements past %s", p[0])
-		}
+
+	if len(p) != 1 {
+		return nil, nil, fmt.Errorf("unexpected path elements past %s", p[0])
 	}
 
 	switch p[0] {
@@ -214,7 +212,8 @@ func (b *EthBlock) Resolve(p []string) (interface{}, []string, error) {
 	case "difficulty":
 		return b.Difficulty, nil, nil
 	case "extra":
-		return fmt.Sprintf("0x%x", b.Extra), nil, nil // This is a []byte. By default they are marshalled into Base64.
+		// This is a []byte. By default they are marshalled into Base64.
+		return fmt.Sprintf("0x%x", b.Extra), nil, nil
 	case "gaslimit":
 		return b.GasLimit, nil, nil
 	case "gasused":
@@ -225,18 +224,8 @@ func (b *EthBlock) Resolve(p []string) (interface{}, []string, error) {
 		return b.Nonce, nil, nil
 	case "number":
 		return b.Number, nil, nil
-	case "parent":
-		return &node.Link{Cid: commonHashToCid(MEthBlock, b.ParentHash)}, p[1:], nil
-	case "receipts":
-		return &node.Link{Cid: commonHashToCid(MEthTxReceiptTrie, b.ReceiptHash)}, p[1:], nil
-	case "root":
-		return &node.Link{Cid: commonHashToCid(MEthStateTrie, b.Root)}, p[1:], nil
 	case "time":
 		return b.Time, nil, nil
-	case "tx":
-		return &node.Link{Cid: commonHashToCid(MEthTxTrie, b.TxHash)}, p[1:], nil
-	case "uncles":
-		return &node.Link{Cid: commonHashToCid(MEthBlockList, b.UncleHash)}, p[1:], nil
 	default:
 		return nil, nil, fmt.Errorf("no such link")
 	}

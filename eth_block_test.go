@@ -185,7 +185,7 @@ func TestEthBlockResolveEmptyPath(t *testing.T) {
 func TestEthBlockResolveNoSuchLink(t *testing.T) {
 	ethBlock := prepareDecodedEthBlock("test_data/eth-block-header-rlp-999999", t)
 
-	_, _, err := ethBlock.Resolve([]string{"wewonthavethisfieldever", "anything", "goes", "here"})
+	_, _, err := ethBlock.Resolve([]string{"wewonthavethisfieldever"})
 	if err == nil {
 		t.Fatal("Should have failed with unknown field")
 	}
@@ -384,7 +384,7 @@ func TestEThBlockTree(t *testing.T) {
 func TestEthBlockResolveLinksBadLink(t *testing.T) {
 	ethBlock := prepareDecodedEthBlock("test_data/eth-block-header-rlp-999999", t)
 
-	obj, rest, err := ethBlock.ResolveLink([]string{"buy", "me", "a", "pony"})
+	obj, rest, err := ethBlock.ResolveLink([]string{"supercalifragilist"})
 	if obj != nil {
 		t.Fatalf("Expected obj to be nil")
 	}
