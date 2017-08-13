@@ -140,6 +140,30 @@ func TestTxTrieDecodeLeaf(t *testing.T) {
 
 }
 
+func TestTxTrieLinks(t *testing.T) {
+	ethTxTrie := prepareDecodedEthTxTrieBranch(t)
+
+	desiredValues := []string{
+		"z443fKyJBiTCxynCqKP1r3BSvJ4nvR4bSEpWFMc7ZJ57L6NJUdH",
+		"z443fKySwQ2WU6av9YcvidCRCYcBrcY1FbsJfdxtTTeKbpiZD8k",
+		"z443fKyTqcL3923Cwqeun2Lo1qs9MPXNV16KFJBHRs6ghNHaFpf",
+		"z443fKyDyheaZ5qTSjSS6XLj6trLWasneACqrkBfwNpnjN2Fuia",
+		"z443fKyNhK436C7wMxoiM9NfjcnHpmdWgbW6CKvtA4f9kUnoD9P",
+		"z443fKyUZTcKeGxvmCfecLxAF8rHEAzCFNVaTwonX2Atd6BB4CS",
+		"z443fKyFbQsGGz5fuym6Gv8hyHErR962okHt1zTNKwXebjwUo3w",
+		"z443fKyG5m6cHmnhBfi4qNvRXNmL18w71XZGxJifbtUPyUNfk5Z",
+		"z443fKyRJvB8PQEdWTL44qqoo2DeZr8QwkasSAfEcWJ6uDUWyh6",
+	}
+
+	links := ethTxTrie.Links()
+
+	for i, v := range desiredValues {
+		if links[i].Cid.String() != v {
+			t.Fatalf("Wrong cid for link %d", i)
+		}
+	}
+}
+
 /*
   AUXILIARS
 */

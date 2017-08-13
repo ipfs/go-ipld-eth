@@ -122,9 +122,16 @@ func (t *EthTxTrie) Copy() node.Node {
 
 // Links is a helper function that returns all links within this object
 func (t *EthTxTrie) Links() []*node.Link {
-	// PLACEHOLDER
-	return nil
-	// PLACEHOLDER
+	var out []*node.Link
+
+	for _, i := range t.elements {
+		c, ok := i.(*cid.Cid)
+		if ok {
+			out = append(out, &node.Link{Cid: c})
+		}
+	}
+
+	return out
 }
 
 // Stat will go away. It is here to comply with the interface.
