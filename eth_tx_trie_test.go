@@ -132,15 +132,7 @@ func TestTxTrieJSONMarshalBranch(t *testing.T) {
 	}
 }
 
-func TestTxTrieDecodeExtension(t *testing.T) {
-
-}
-
-func TestTxTrieDecodeLeaf(t *testing.T) {
-
-}
-
-func TestTxTrieLinks(t *testing.T) {
+func TestTxTrieLinksBranch(t *testing.T) {
 	ethTxTrie := prepareDecodedEthTxTrieBranch(t)
 
 	desiredValues := []string{
@@ -162,6 +154,61 @@ func TestTxTrieLinks(t *testing.T) {
 			t.Fatalf("Wrong cid for link %d", i)
 		}
 	}
+}
+
+func TessTxTrieTreeBadParams(t *testing.T) {
+	ethTxTrie := prepareDecodedEthTxTrieBranch(t)
+
+	tree := ethTxTrie.Tree("non-empty-string", 0)
+	if tree != nil {
+		t.Fatal("Expected nil to be returned")
+	}
+
+	tree = ethTxTrie.Tree("non-empty-string", 1)
+	if tree != nil {
+		t.Fatal("Expected nil to be returned")
+	}
+
+	tree = ethTxTrie.Tree("", 0)
+	if tree != nil {
+		t.Fatal("Expected nil to be returned")
+	}
+}
+
+func TestTxTrieTreeBranch(t *testing.T) {
+	ethTxTrie := prepareDecodedEthTxTrieBranch(t)
+
+	tree := ethTxTrie.Tree("", -1)
+
+	lookupElements := map[string]interface{}{
+		"0": nil,
+		"1": nil,
+		"2": nil,
+		"3": nil,
+		"4": nil,
+		"5": nil,
+		"6": nil,
+		"7": nil,
+		"8": nil,
+	}
+
+	if len(tree) != len(lookupElements) {
+		t.Fatalf("Wrong number of elements. Got %d. Expecting %d", len(tree), len(lookupElements))
+	}
+
+	for _, te := range tree {
+		if _, ok := lookupElements[te]; !ok {
+			t.Fatalf("Unexpected Element: %v", te)
+		}
+	}
+}
+
+func TestTxTrieDecodeExtension(t *testing.T) {
+
+}
+
+func TestTxTrieDecodeLeaf(t *testing.T) {
+
 }
 
 /*

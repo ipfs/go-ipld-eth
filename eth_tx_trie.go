@@ -94,9 +94,24 @@ func (t *EthTxTrie) Resolve(p []string) (interface{}, []string, error) {
 // Tree lists all paths within the object under 'path', and up to the given depth.
 // To list the entire object (similar to `find .`) pass "" and -1
 func (t *EthTxTrie) Tree(p string, depth int) []string {
-	// PLACEHOLDER
-	return nil
-	// PLACEHOLDER
+	if p != "" || depth == 0 {
+		return nil
+	}
+
+	var out []string
+
+	switch t.nodeKind {
+	case "branch":
+		for i, elem := range t.elements {
+			if _, ok := elem.(*cid.Cid); ok {
+				out = append(out, fmt.Sprintf("%x", i))
+			}
+		}
+		return out
+
+	default:
+		return nil
+	}
 }
 
 // ResolveLink is a helper function that calls resolve and asserts the
