@@ -152,28 +152,35 @@ func decodeTrieNode(b []byte) (string, []interface{}, error) {
 			return "leaf", []interface{}{key, val}, nil
 		}
 
-	// Branch
 	case 17:
-		var children []interface{}
-		for _, vi := range i {
-			v := vi.([]byte)
-
-			switch len(v) {
-			case 0:
-				children = append(children, nil)
-			case 32:
-				children = append(children, keccak256ToCid(MEthTxTrie, v))
-			default:
-				// The value should be either nil or a reference to another trie element.
-				// We are not expecting branch nodes with children of less than 32 bytes.
-				return "", nil, fmt.Errorf("unrecognized object in trie: %v", v)
-			}
-		}
-		return "branch", children, nil
+		return decodeTrieBranchNode(i)
 
 	default:
 		return "", nil, fmt.Errorf("unknown trie node type")
 	}
+}
+
+// decodeTrieBranchNode takes care of a trie node,
+// once its kind is identified as a branch.
+func decodeTrieBranchNode(i []interface{}) (string, []interface{}, error) {
+	var children []interface{}
+	for _, vi := range i {
+		v := vi.([]byte)
+
+		switch len(v) {
+		case 0:
+			children = append(children, nil)
+		case 32:
+			children = append(children, keccak256ToCid(MEthTxTrie, v))
+		default:
+			// The value should be either nil or a reference
+			// to another trie element. We are not expecting
+			// branch nodes with children of less than 32 bytes.
+			return "", nil, fmt.Errorf("unrecognized object: %v", v)
+		}
+	}
+	return "branch", children, nil
+
 }
 
 // resolveTriePath takes a trie path, and the nodeKind and elements of a trie node.
