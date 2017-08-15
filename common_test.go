@@ -56,6 +56,8 @@ func TestValidateTriePathBadCases(t *testing.T) {
 		[]string{"", "1", "1", "B"},
 		[]string{"cC00--d4"},
 		[]string{"0123n56789abcdef"},
+		[]string{"012356789abcdef", "banana"},
+		[]string{"0", "0", "0", "m0m0ney"},
 	}
 
 	for _, bc := range badCases {
