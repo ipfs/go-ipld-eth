@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/rlp"
 	cid "github.com/ipfs/go-cid"
 	node "github.com/ipfs/go-ipld-format"
 )
@@ -41,7 +43,24 @@ var _ node.Node = (*EthTxTrie)(nil)
 
 // DecodeEthTxTrie returns an EthTxTrie object from its cid and rawdata.
 func DecodeEthTxTrie(c *cid.Cid, b []byte) (*EthTxTrie, error) {
-	nodeKind, elements, err := decodeTrieNode(b)
+	var elements []interface{}
+
+	nodeKind, i, err := decodeTrieNode(b)
+	if err != nil {
+		return nil, err
+	}
+
+	switch nodeKind {
+	case "extension":
+		elements, err = parseEthTxTrieExtension(i)
+	case "leaf":
+		elements, err = parseEthTxTrieLeaf(i)
+	case "branch":
+		elements, err = parseEthTxTrieBranch(i)
+	default:
+		return nil, fmt.Errorf("nodeKind not supported")
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -52,6 +71,51 @@ func DecodeEthTxTrie(c *cid.Cid, b []byte) (*EthTxTrie, error) {
 		rawdata:  b,
 		cid:      c,
 	}, nil
+}
+
+// parseEthTxTrieExtension helper improves readability
+func parseEthTxTrieExtension(i []interface{}) ([]interface{}, error) {
+	return []interface{}{
+		i[0].([]byte),
+		keccak256ToCid(MEthTxTrie, i[1].([]byte)),
+	}, nil
+}
+
+// parseEthTxTrieLeaf helper improves readability
+func parseEthTxTrieLeaf(i []interface{}) ([]interface{}, error) {
+	var t types.Transaction
+	err := rlp.DecodeBytes(i[1].([]byte), &t)
+	if err != nil {
+		return nil, err
+	}
+	return []interface{}{
+		i[0].([]byte),
+		&EthTx{
+			Transaction: &t,
+			cid:         rawdataToCid(MEthTx, i[1].([]byte)),
+			rawdata:     i[1].([]byte),
+		},
+	}, nil
+}
+
+// parseEthTxTrieBranch helper improves readability
+func parseEthTxTrieBranch(i []interface{}) ([]interface{}, error) {
+	var out []interface{}
+
+	for _, vi := range i {
+		v := vi.([]byte)
+
+		switch len(v) {
+		case 0:
+			out = append(out, nil)
+		case 32:
+			out = append(out, keccak256ToCid(MEthTxTrie, v))
+		default:
+			return nil, fmt.Errorf("unrecognized object: %v", v)
+		}
+	}
+
+	return out, nil
 }
 
 /*
@@ -168,6 +232,15 @@ func (t *EthTxTrie) MarshalJSON() ([]byte, error) {
 	var out map[string]interface{}
 
 	switch t.nodeKind {
+	case "extension":
+		var val string
+		for _, e := range t.elements[0].([]byte) {
+			val += fmt.Sprintf("%x", e)
+		}
+		out = map[string]interface{}{
+			"type": "extension",
+			val:    t.elements[1],
+		}
 	case "branch":
 		out = map[string]interface{}{
 			"type": "branch",

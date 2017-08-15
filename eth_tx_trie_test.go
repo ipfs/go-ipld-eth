@@ -3,7 +3,9 @@ package ipldeth
 import (
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	block "github.com/ipfs/go-block-format"
@@ -23,6 +25,27 @@ func TestTxTriesInBlockBodyJSONParsing(t *testing.T) {
 
 	if len(output) != 331 {
 		t.Fatal("Wrong number of obtained tx trie nodes")
+	}
+}
+
+func TestTxTrieDecodeExtension(t *testing.T) {
+	ethTxTrie := prepareDecodedEthTxTrieExtension(t)
+
+	if ethTxTrie.nodeKind != "extension" {
+		t.Fatal("Wrong nodeKind")
+	}
+
+	if len(ethTxTrie.elements) != 2 {
+		t.Fatal("Wrong number of elements for an extension node")
+	}
+
+	if fmt.Sprintf("%x", ethTxTrie.elements[0].([]byte)) != "0001" {
+		t.Fatal("Wrong key")
+	}
+
+	if ethTxTrie.elements[1].(*cid.Cid).String() !=
+		"z443fKyJaFfaE7Hsozvv7HGEHqNWPEhkNgzgnXjVKdxqCE74PgF" {
+		t.Fatal("Wrong Value")
 	}
 }
 
@@ -48,6 +71,44 @@ func TestTxTrieDecodeBranch(t *testing.T) {
 			if element != nil {
 				t.Fatal("Expected element to be a nil")
 			}
+		}
+	}
+}
+
+func TestTxTrieResolveExtensionReference(t *testing.T) {
+	ethTxTrie := prepareDecodedEthTxTrieExtension(t)
+
+	badCases := []string{"0", "00"}
+
+	for _, bc := range badCases {
+		obj, rest, err := ethTxTrie.Resolve([]string{bc})
+		if obj != nil {
+			t.Fatal("obj should be nil")
+		}
+
+		if rest != nil {
+			t.Fatal("rest should be nil")
+		}
+
+		if err.Error() != "no such link in this extension" {
+			t.Fatalf("Wrong error")
+		}
+	}
+
+	goodCases := []string{"01", "01a", "01ab"}
+	for _, gc := range goodCases {
+		obj, rest, err := ethTxTrie.Resolve([]string{gc})
+		_, ok := obj.(*node.Link)
+		if !ok {
+			t.Fatalf("Returned object is not a link")
+		}
+
+		if strings.Join(rest, "") != gc[2:] {
+			t.Fatal("Wrong rest of the path returned")
+		}
+
+		if err != nil {
+			t.Fatal("Error should be nil")
 		}
 	}
 }
@@ -86,10 +147,30 @@ func TestTxTrieResolveBranchChildren(t *testing.T) {
 				t.Fatalf("Rest of the path returned should be nil")
 			}
 
-			if err.Error() != "no such link" {
+			if err.Error() != "no such link in this branch" {
 				t.Fatalf("Wrong error")
 			}
 		}
+	}
+}
+
+func TestTxTrieJSONMarshalExtension(t *testing.T) {
+	ethTxTrie := prepareDecodedEthTxTrieExtension(t)
+
+	jsonOutput, err := ethTxTrie.MarshalJSON()
+	checkError(err, t)
+
+	var data map[string]interface{}
+	err = json.Unmarshal(jsonOutput, &data)
+	checkError(err, t)
+
+	if parseMapElement(data["01"]) !=
+		"z443fKyJaFfaE7Hsozvv7HGEHqNWPEhkNgzgnXjVKdxqCE74PgF" {
+		t.Fatal("Wrong Marshaled Value")
+	}
+
+	if data["type"] != "extension" {
+		t.Fatal("Expected type to be extension")
 	}
 }
 
@@ -203,10 +284,6 @@ func TestTxTrieTreeBranch(t *testing.T) {
 	}
 }
 
-func TestTxTrieDecodeExtension(t *testing.T) {
-
-}
-
 func TestTxTrieDecodeLeaf(t *testing.T) {
 
 }
@@ -232,7 +309,12 @@ func prepareDecodedEthTxTrie(branchDataRLP string, t *testing.T) *EthTxTrie {
 	return ethTxTrie
 }
 
-// prepareDecodedEthTxTrieBranch is a just a helper, to avoid having these lines so many times.
+func prepareDecodedEthTxTrieExtension(t *testing.T) *EthTxTrie {
+	extensionDataRLP :=
+		"e4820001a057ac34d6471cc3f5c6ab992c4c0fe5ec131d8d9961fe6d5de8e5e367513243b4"
+	return prepareDecodedEthTxTrie(extensionDataRLP, t)
+}
+
 func prepareDecodedEthTxTrieBranch(t *testing.T) *EthTxTrie {
 	branchDataRLP :=
 		"f90131a051e622bd20e77781a010b9903832e73fd3665e89407ded8c840d8b2db34dd9" +

@@ -140,47 +140,57 @@ func decodeTrieNode(b []byte) (string, []interface{}, error) {
 	}
 
 	switch len(i) {
-	// Leaf or Extension?
 	case 2:
-
-		key := i[0].([]byte)
-		val := i[1].([]byte)
-
-		if len(val) == 32 {
-			return "extension", []interface{}{key, val}, nil
-		} else {
-			return "leaf", []interface{}{key, val}, nil
-		}
-
+		return decodeTrieLeafExtensionNode(i)
 	case 17:
-		return decodeTrieBranchNode(i)
+		return "branch", i, nil
 
 	default:
 		return "", nil, fmt.Errorf("unknown trie node type")
 	}
 }
 
-// decodeTrieBranchNode takes care of a trie node,
-// once its kind is identified as a branch.
-func decodeTrieBranchNode(i []interface{}) (string, []interface{}, error) {
-	var children []interface{}
-	for _, vi := range i {
-		v := vi.([]byte)
+// decodeTrieLeafExtensionNode takes a compact key, and returns its nodeKind and value.
+func decodeTrieLeafExtensionNode(i []interface{}) (string, []interface{}, error) {
+	first := i[0].([]byte)
+	last := i[1].([]byte)
 
-		switch len(v) {
-		case 0:
-			children = append(children, nil)
-		case 32:
-			children = append(children, keccak256ToCid(MEthTxTrie, v))
-		default:
-			// The value should be either nil or a reference
-			// to another trie element. We are not expecting
-			// branch nodes with children of less than 32 bytes.
-			return "", nil, fmt.Errorf("unrecognized object: %v", v)
-		}
+	switch first[0] / 16 {
+	case '\x00':
+		return "extension", []interface{}{
+			nibbleToByte(first)[2:],
+			last,
+		}, nil
+	case '\x01':
+		return "extension", []interface{}{
+			nibbleToByte(first)[1:],
+			last,
+		}, nil
+	case '\x02':
+		return "leaf", []interface{}{
+			nibbleToByte(first)[2:],
+			last,
+		}, nil
+	case '\x03':
+		return "leaf", []interface{}{
+			nibbleToByte(first)[1:],
+			last,
+		}, nil
+	default:
+		return "", nil, fmt.Errorf("unknown hex prefix")
 	}
-	return "branch", children, nil
+}
 
+// nibbleToByte expands the nibbles of a byte slice into their own bytes.
+func nibbleToByte(k []byte) []byte {
+	var out []byte
+
+	for _, b := range k {
+		out = append(out, b/16)
+		out = append(out, b%16)
+	}
+
+	return out
 }
 
 // resolveTriePath takes a trie path, and the nodeKind and elements of a trie node.
@@ -193,12 +203,18 @@ func resolveTriePath(p []string, nodeKind string, elements []interface{}) (inter
 	}
 
 	switch nodeKind {
+	case "extension":
+		nibblesCount := checkPathNibbles(elements[0].([]byte), p)
+		if nibblesCount == -1 {
+			return nil, nil, fmt.Errorf("no such link in this extension")
+		}
+		return &node.Link{Cid: elements[1].(*cid.Cid)}, p[nibblesCount:], nil
 	case "branch":
 		child := elements[getHexIndex(p[0])]
 		if child != nil {
 			return &node.Link{Cid: child.(*cid.Cid)}, p[1:], nil
 		}
-		return nil, nil, fmt.Errorf("no such link")
+		return nil, nil, fmt.Errorf("no such link in this branch")
 	default:
 		return nil, nil, fmt.Errorf("nodeKind case not implemented")
 	}
@@ -251,6 +267,22 @@ func validateTriePath(p []string, specialFields map[string]interface{}) ([]strin
 	}
 
 	return output, nil
+}
+
+// checkPathNibbles tests whether the given path can resolve the trie node
+// element key, returning the number of nibbles the key has if succeed.
+func checkPathNibbles(nibbles []byte, p []string) int {
+	if len(p) < len(nibbles) {
+		return -1
+	}
+
+	for i, n := range nibbles {
+		if p[i] != fmt.Sprintf("%x", n) {
+			return -1
+		}
+	}
+
+	return len(nibbles)
 }
 
 // getHexIndex returns to you the integer 0 - 15 equivalent to your
