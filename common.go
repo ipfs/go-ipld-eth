@@ -144,7 +144,6 @@ func decodeTrieNode(b []byte) (string, []interface{}, error) {
 		return decodeTrieLeafExtensionNode(i)
 	case 17:
 		return "branch", i, nil
-
 	default:
 		return "", nil, fmt.Errorf("unknown trie node type")
 	}
@@ -193,9 +192,8 @@ func nibbleToByte(k []byte) []byte {
 	return out
 }
 
-// resolveTriePath takes a trie path, and the nodeKind and elements of a trie node.
-// After validating and normalizing the received path, it will resolve in the node
-// whether there is a node link (with or without a rest of the path) or an error.
+// resolveTriePath takes a trie path, the nodeKind and elements of a trie node.
+// After validating and normalizing the path, it will attempt to resolve it in the node.
 func resolveTriePath(p []string, nodeKind string, elements []interface{}) (interface{}, []string, error) {
 	p, err := validateTriePath(p, getTxFields())
 	if err != nil {
