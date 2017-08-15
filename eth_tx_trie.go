@@ -144,6 +144,10 @@ func (t *EthTxTrie) Loggable() map[string]interface{} {
 	}
 }
 
+/*
+  Node INTERFACE
+*/
+
 // Resolve resolves a path through this node, stopping at any link boundary
 // and returning the object found as well as the remaining path to traverse
 func (t *EthTxTrie) Resolve(p []string) (interface{}, []string, error) {

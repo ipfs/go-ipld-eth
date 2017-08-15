@@ -13,6 +13,10 @@ import (
 	node "github.com/ipfs/go-ipld-format"
 )
 
+/*
+  EthBlock
+*/
+
 func TestTxTriesInBlockBodyJSONParsing(t *testing.T) {
 	// HINT: 306 txs
 	// cat test_data/eth-block-body-json-4139497 | jsontool | grep transactionIndex | wc -l
@@ -27,6 +31,10 @@ func TestTxTriesInBlockBodyJSONParsing(t *testing.T) {
 		t.Fatal("Wrong number of obtained tx trie nodes")
 	}
 }
+
+/*
+  OUTPUT
+*/
 
 func TestTxTrieDecodeExtension(t *testing.T) {
 	ethTxTrie := prepareDecodedEthTxTrieExtension(t)
@@ -74,6 +82,48 @@ func TestTxTrieDecodeBranch(t *testing.T) {
 		}
 	}
 }
+
+/*
+  Block INTERFACE
+*/
+
+func TestEthTxTrieBlockElements(t *testing.T) {
+	ethTxTrie := prepareDecodedEthTxTrieExtension(t)
+
+	if fmt.Sprintf("%x", ethTxTrie.RawData())[:10] != "e4820001a0" {
+		t.Fatal("Wrong Data")
+	}
+
+	if ethTxTrie.Cid().String() !=
+		"z443fKyR2PNJ3gNLTrPEmkHJh4YJ2mNMU9QX4HuBFNfBGnkb444" {
+		t.Fatal("Wrong Cid")
+	}
+}
+
+func TestEthTxTrieString(t *testing.T) {
+	ethTxTrie := prepareDecodedEthTxTrieExtension(t)
+
+	if ethTxTrie.String() != "<EthereumTxTrie z443fKyR2PNJ3gNLTrPEmkHJh4YJ2mNMU9QX4HuBFNfBGnkb444>" {
+		t.Fatalf("Wrong String()")
+	}
+}
+
+func TestEthTxTrieLoggable(t *testing.T) {
+
+	ethTxTrie := prepareDecodedEthTxTrieExtension(t)
+	l := ethTxTrie.Loggable()
+	if _, ok := l["type"]; !ok {
+		t.Fatal("Loggable map expected the field 'type'")
+	}
+
+	if l["type"] != "eth-tx-trie" {
+		t.Fatal("Wrong Loggable 'type' value")
+	}
+}
+
+/*
+  Node INTERFACE
+*/
 
 func TestTxTrieResolveExtensionReference(t *testing.T) {
 	ethTxTrie := prepareDecodedEthTxTrieExtension(t)
@@ -154,65 +204,6 @@ func TestTxTrieResolveBranchChildren(t *testing.T) {
 	}
 }
 
-func TestTxTrieJSONMarshalExtension(t *testing.T) {
-	ethTxTrie := prepareDecodedEthTxTrieExtension(t)
-
-	jsonOutput, err := ethTxTrie.MarshalJSON()
-	checkError(err, t)
-
-	var data map[string]interface{}
-	err = json.Unmarshal(jsonOutput, &data)
-	checkError(err, t)
-
-	if parseMapElement(data["01"]) !=
-		"z443fKyJaFfaE7Hsozvv7HGEHqNWPEhkNgzgnXjVKdxqCE74PgF" {
-		t.Fatal("Wrong Marshaled Value")
-	}
-
-	if data["type"] != "extension" {
-		t.Fatal("Expected type to be extension")
-	}
-}
-
-func TestTxTrieJSONMarshalBranch(t *testing.T) {
-	ethTxTrie := prepareDecodedEthTxTrieBranch(t)
-
-	jsonOutput, err := ethTxTrie.MarshalJSON()
-	checkError(err, t)
-
-	var data map[string]interface{}
-	err = json.Unmarshal(jsonOutput, &data)
-	checkError(err, t)
-
-	desiredValues := map[string]string{
-		"0": "z443fKyJBiTCxynCqKP1r3BSvJ4nvR4bSEpWFMc7ZJ57L6NJUdH",
-		"1": "z443fKySwQ2WU6av9YcvidCRCYcBrcY1FbsJfdxtTTeKbpiZD8k",
-		"2": "z443fKyTqcL3923Cwqeun2Lo1qs9MPXNV16KFJBHRs6ghNHaFpf",
-		"3": "z443fKyDyheaZ5qTSjSS6XLj6trLWasneACqrkBfwNpnjN2Fuia",
-		"4": "z443fKyNhK436C7wMxoiM9NfjcnHpmdWgbW6CKvtA4f9kUnoD9P",
-		"5": "z443fKyUZTcKeGxvmCfecLxAF8rHEAzCFNVaTwonX2Atd6BB4CS",
-		"6": "z443fKyFbQsGGz5fuym6Gv8hyHErR962okHt1zTNKwXebjwUo3w",
-		"7": "z443fKyG5m6cHmnhBfi4qNvRXNmL18w71XZGxJifbtUPyUNfk5Z",
-		"8": "z443fKyRJvB8PQEdWTL44qqoo2DeZr8QwkasSAfEcWJ6uDUWyh6",
-	}
-
-	for k, v := range desiredValues {
-		if parseMapElement(data[k]) != v {
-			t.Fatal("Wrong Marshaled Value")
-		}
-	}
-
-	for _, v := range []string{"a", "b", "c", "d", "e", "f"} {
-		if data[v] != nil {
-			t.Fatal("Expected value to be nil")
-		}
-	}
-
-	if data["type"] != "branch" {
-		t.Fatal("Expected type to be branch")
-	}
-}
-
 func TestTxTrieLinksBranch(t *testing.T) {
 	ethTxTrie := prepareDecodedEthTxTrieBranch(t)
 
@@ -284,8 +275,67 @@ func TestTxTrieTreeBranch(t *testing.T) {
 	}
 }
 
-func TestTxTrieDecodeLeaf(t *testing.T) {
+/*
+  EthTxTrie Functions
+*/
 
+func TestTxTrieJSONMarshalExtension(t *testing.T) {
+	ethTxTrie := prepareDecodedEthTxTrieExtension(t)
+
+	jsonOutput, err := ethTxTrie.MarshalJSON()
+	checkError(err, t)
+
+	var data map[string]interface{}
+	err = json.Unmarshal(jsonOutput, &data)
+	checkError(err, t)
+
+	if parseMapElement(data["01"]) !=
+		"z443fKyJaFfaE7Hsozvv7HGEHqNWPEhkNgzgnXjVKdxqCE74PgF" {
+		t.Fatal("Wrong Marshaled Value")
+	}
+
+	if data["type"] != "extension" {
+		t.Fatal("Expected type to be extension")
+	}
+}
+
+func TestTxTrieJSONMarshalBranch(t *testing.T) {
+	ethTxTrie := prepareDecodedEthTxTrieBranch(t)
+
+	jsonOutput, err := ethTxTrie.MarshalJSON()
+	checkError(err, t)
+
+	var data map[string]interface{}
+	err = json.Unmarshal(jsonOutput, &data)
+	checkError(err, t)
+
+	desiredValues := map[string]string{
+		"0": "z443fKyJBiTCxynCqKP1r3BSvJ4nvR4bSEpWFMc7ZJ57L6NJUdH",
+		"1": "z443fKySwQ2WU6av9YcvidCRCYcBrcY1FbsJfdxtTTeKbpiZD8k",
+		"2": "z443fKyTqcL3923Cwqeun2Lo1qs9MPXNV16KFJBHRs6ghNHaFpf",
+		"3": "z443fKyDyheaZ5qTSjSS6XLj6trLWasneACqrkBfwNpnjN2Fuia",
+		"4": "z443fKyNhK436C7wMxoiM9NfjcnHpmdWgbW6CKvtA4f9kUnoD9P",
+		"5": "z443fKyUZTcKeGxvmCfecLxAF8rHEAzCFNVaTwonX2Atd6BB4CS",
+		"6": "z443fKyFbQsGGz5fuym6Gv8hyHErR962okHt1zTNKwXebjwUo3w",
+		"7": "z443fKyG5m6cHmnhBfi4qNvRXNmL18w71XZGxJifbtUPyUNfk5Z",
+		"8": "z443fKyRJvB8PQEdWTL44qqoo2DeZr8QwkasSAfEcWJ6uDUWyh6",
+	}
+
+	for k, v := range desiredValues {
+		if parseMapElement(data[k]) != v {
+			t.Fatal("Wrong Marshaled Value")
+		}
+	}
+
+	for _, v := range []string{"a", "b", "c", "d", "e", "f"} {
+		if data[v] != nil {
+			t.Fatal("Expected value to be nil")
+		}
+	}
+
+	if data["type"] != "branch" {
+		t.Fatal("Expected type to be branch")
+	}
 }
 
 /*
