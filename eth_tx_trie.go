@@ -151,12 +151,7 @@ func (t *EthTxTrie) Loggable() map[string]interface{} {
 // Resolve resolves a path through this node, stopping at any link boundary
 // and returning the object found as well as the remaining path to traverse
 func (t *EthTxTrie) Resolve(p []string) (interface{}, []string, error) {
-	obj, rest, err := resolveTriePath(p, t.nodeKind, t.elements)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return obj, rest, nil
+	return resolveTriePath(p, t.nodeKind, t.elements)
 }
 
 // Tree lists all paths within the object under 'path', and up to the given depth.

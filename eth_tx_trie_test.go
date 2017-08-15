@@ -379,6 +379,12 @@ func prepareDecodedEthTxTrieExtension(t *testing.T) *EthTxTrie {
 	return prepareDecodedEthTxTrie(extensionDataRLP, t)
 }
 
+func prepareDecodeEThTxTrieLeaf(t *testing.T) *EthTxTrie {
+	leafDataRLP :=
+		""
+	return prepareDecodedEthTxTrie(leafDataRLP, t)
+}
+
 func prepareDecodedEthTxTrieBranch(t *testing.T) *EthTxTrie {
 	branchDataRLP :=
 		"f90131a051e622bd20e77781a010b9903832e73fd3665e89407ded8c840d8b2db34dd9" +
