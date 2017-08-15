@@ -237,7 +237,7 @@ func TestTxTrieLinksBranch(t *testing.T) {
 	}
 }
 
-func TessTxTrieTreeBadParams(t *testing.T) {
+func TestTxTrieTreeBadParams(t *testing.T) {
 	ethTxTrie := prepareDecodedEthTxTrieBranch(t)
 
 	tree := ethTxTrie.Tree("non-empty-string", 0)

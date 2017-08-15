@@ -122,7 +122,7 @@ func processTransactions(txs []*types.Transaction, expectedTxRoot []byte) ([]*Et
 	}
 
 	if !bytes.Equal(transactionTrie.rootHash(), expectedTxRoot) {
-		return nil, nil, fmt.Errorf("Wrong transaction hash computed!")
+		return nil, nil, fmt.Errorf("wrong transaction hash computed")
 	}
 
 	ethTxTrieNodes := transactionTrie.getNodes()
