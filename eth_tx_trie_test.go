@@ -204,30 +204,6 @@ func TestTxTrieResolveBranchChildren(t *testing.T) {
 	}
 }
 
-func TestTxTrieLinksBranch(t *testing.T) {
-	ethTxTrie := prepareDecodedEthTxTrieBranch(t)
-
-	desiredValues := []string{
-		"z443fKyJBiTCxynCqKP1r3BSvJ4nvR4bSEpWFMc7ZJ57L6NJUdH",
-		"z443fKySwQ2WU6av9YcvidCRCYcBrcY1FbsJfdxtTTeKbpiZD8k",
-		"z443fKyTqcL3923Cwqeun2Lo1qs9MPXNV16KFJBHRs6ghNHaFpf",
-		"z443fKyDyheaZ5qTSjSS6XLj6trLWasneACqrkBfwNpnjN2Fuia",
-		"z443fKyNhK436C7wMxoiM9NfjcnHpmdWgbW6CKvtA4f9kUnoD9P",
-		"z443fKyUZTcKeGxvmCfecLxAF8rHEAzCFNVaTwonX2Atd6BB4CS",
-		"z443fKyFbQsGGz5fuym6Gv8hyHErR962okHt1zTNKwXebjwUo3w",
-		"z443fKyG5m6cHmnhBfi4qNvRXNmL18w71XZGxJifbtUPyUNfk5Z",
-		"z443fKyRJvB8PQEdWTL44qqoo2DeZr8QwkasSAfEcWJ6uDUWyh6",
-	}
-
-	links := ethTxTrie.Links()
-
-	for i, v := range desiredValues {
-		if links[i].Cid.String() != v {
-			t.Fatalf("Wrong cid for link %d", i)
-		}
-	}
-}
-
 func TestTxTrieTreeBadParams(t *testing.T) {
 	ethTxTrie := prepareDecodedEthTxTrieBranch(t)
 
@@ -244,6 +220,20 @@ func TestTxTrieTreeBadParams(t *testing.T) {
 	tree = ethTxTrie.Tree("", 0)
 	if tree != nil {
 		t.Fatal("Expected nil to be returned")
+	}
+}
+
+func TestTxTrieTreeExtension(t *testing.T) {
+	ethTxTrie := prepareDecodedEthTxTrieExtension(t)
+
+	tree := ethTxTrie.Tree("", -1)
+
+	if len(tree) != 1 {
+		t.Fatalf("An extension should have one element")
+	}
+
+	if tree[0] != "01" {
+		t.Fatal("Wrong trie element")
 	}
 }
 
@@ -271,6 +261,30 @@ func TestTxTrieTreeBranch(t *testing.T) {
 	for _, te := range tree {
 		if _, ok := lookupElements[te]; !ok {
 			t.Fatalf("Unexpected Element: %v", te)
+		}
+	}
+}
+
+func TestTxTrieLinksBranch(t *testing.T) {
+	ethTxTrie := prepareDecodedEthTxTrieBranch(t)
+
+	desiredValues := []string{
+		"z443fKyJBiTCxynCqKP1r3BSvJ4nvR4bSEpWFMc7ZJ57L6NJUdH",
+		"z443fKySwQ2WU6av9YcvidCRCYcBrcY1FbsJfdxtTTeKbpiZD8k",
+		"z443fKyTqcL3923Cwqeun2Lo1qs9MPXNV16KFJBHRs6ghNHaFpf",
+		"z443fKyDyheaZ5qTSjSS6XLj6trLWasneACqrkBfwNpnjN2Fuia",
+		"z443fKyNhK436C7wMxoiM9NfjcnHpmdWgbW6CKvtA4f9kUnoD9P",
+		"z443fKyUZTcKeGxvmCfecLxAF8rHEAzCFNVaTwonX2Atd6BB4CS",
+		"z443fKyFbQsGGz5fuym6Gv8hyHErR962okHt1zTNKwXebjwUo3w",
+		"z443fKyG5m6cHmnhBfi4qNvRXNmL18w71XZGxJifbtUPyUNfk5Z",
+		"z443fKyRJvB8PQEdWTL44qqoo2DeZr8QwkasSAfEcWJ6uDUWyh6",
+	}
+
+	links := ethTxTrie.Links()
+
+	for i, v := range desiredValues {
+		if links[i].Cid.String() != v {
+			t.Fatalf("Wrong cid for link %d", i)
 		}
 	}
 }

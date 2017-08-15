@@ -169,6 +169,12 @@ func (t *EthTxTrie) Tree(p string, depth int) []string {
 	var out []string
 
 	switch t.nodeKind {
+	case "extension":
+		var val string
+		for _, e := range t.elements[0].([]byte) {
+			val += fmt.Sprintf("%x", e)
+		}
+		return []string{val}
 	case "branch":
 		for i, elem := range t.elements {
 			if _, ok := elem.(*cid.Cid); ok {
