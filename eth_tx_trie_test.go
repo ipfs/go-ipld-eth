@@ -57,6 +57,31 @@ func TestTxTrieDecodeExtension(t *testing.T) {
 	}
 }
 
+func TestTxTrieDecodeLeaf(t *testing.T) {
+	ethTxTrie := prepareDecodedEthTxTrieLeaf(t)
+
+	if ethTxTrie.nodeKind != "leaf" {
+		t.Fatal("Wrong nodeKind")
+	}
+
+	if len(ethTxTrie.elements) != 2 {
+		t.Fatal("Wrong number of elements for a leaf node")
+	}
+
+	if fmt.Sprintf("%x", ethTxTrie.elements[0].([]byte)) != "" {
+		t.Fatal("Wrong key")
+	}
+
+	if _, ok := ethTxTrie.elements[1].(*EthTx); !ok {
+		t.Fatal("Wrong Type. Element should be a transaction")
+	}
+
+	if ethTxTrie.elements[1].(*EthTx).String() !=
+		"<EthereumTx z44VCrqXZu4u7rxeXCTgn6epNgUrum8Nrr7bCFToDBr3EWwe2N6>" {
+		t.Fatal("Wrong element, supposed to be a transaction")
+	}
+}
+
 func TestTxTrieDecodeBranch(t *testing.T) {
 	ethTxTrie := prepareDecodedEthTxTrieBranch(t)
 
@@ -313,6 +338,26 @@ func TestTxTrieJSONMarshalExtension(t *testing.T) {
 	}
 }
 
+func TestTxTrieJSONMarshalLeaf(t *testing.T) {
+	ethTxTrie := prepareDecodedEthTxTrieLeaf(t)
+
+	jsonOutput, err := ethTxTrie.MarshalJSON()
+	checkError(err, t)
+
+	var data map[string]interface{}
+	err = json.Unmarshal(jsonOutput, &data)
+	checkError(err, t)
+
+	if data["type"] != "leaf" {
+		t.Fatal("Expected type to be leaf")
+	}
+
+	if fmt.Sprintf("%v", data[""].(map[string]interface{})["nonce"]) !=
+		"0x9d33" {
+		t.Fatal("Wroing nonce value")
+	}
+}
+
 func TestTxTrieJSONMarshalBranch(t *testing.T) {
 	ethTxTrie := prepareDecodedEthTxTrieBranch(t)
 
@@ -379,9 +424,12 @@ func prepareDecodedEthTxTrieExtension(t *testing.T) *EthTxTrie {
 	return prepareDecodedEthTxTrie(extensionDataRLP, t)
 }
 
-func prepareDecodeEThTxTrieLeaf(t *testing.T) *EthTxTrie {
+func prepareDecodedEthTxTrieLeaf(t *testing.T) *EthTxTrie {
 	leafDataRLP :=
-		""
+		"f87220b86ff86d829d3384ee6b280083015f9094e0e6c781b8cba08bc840" +
+			"7eac0101b668d1fa6f4987c495a9586034008026a0981b6223c9d3c31971" +
+			"6da3cf057da84acf0fef897f4003d8a362d7bda42247dba066be134c4bc4" +
+			"32125209b5056ef274b7423bcac7cc398cf60b83aaff7b95469f"
 	return prepareDecodedEthTxTrie(leafDataRLP, t)
 }
 

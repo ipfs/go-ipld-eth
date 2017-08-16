@@ -238,12 +238,14 @@ func (t *EthTxTrie) MarshalJSON() ([]byte, error) {
 
 	switch t.nodeKind {
 	case "extension":
+		fallthrough
+	case "leaf":
 		var val string
 		for _, e := range t.elements[0].([]byte) {
 			val += fmt.Sprintf("%x", e)
 		}
 		out = map[string]interface{}{
-			"type": "extension",
+			"type": t.nodeKind,
 			val:    t.elements[1],
 		}
 	case "branch":
