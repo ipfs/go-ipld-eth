@@ -188,6 +188,10 @@ func TestTxTrieResolveExtensionReference(t *testing.T) {
 	}
 }
 
+func TestTxTrieResolveLeafChildren(t *testing.T) {
+	// HERE
+}
+
 func TestTxTrieResolveBranchChildren(t *testing.T) {
 	ethTxTrie := prepareDecodedEthTxTrieBranch(t)
 

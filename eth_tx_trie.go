@@ -40,8 +40,8 @@ func DecodeEthTxTrie(c *cid.Cid, b []byte) (*EthTxTrie, error) {
 	return &EthTxTrie{TrieNode: tn}, nil
 }
 
-// decodeEthTxTrieLeaf parses a eth-tx-trie leaf from decoded
-// RLP elements
+// decodeEthTxTrieLeaf parses a eth-tx-trie leaf
+//from decoded RLP elements
 func decodeEthTxTrieLeaf(i []interface{}) ([]interface{}, error) {
 	var t types.Transaction
 	err := rlp.DecodeBytes(i[1].([]byte), &t)
