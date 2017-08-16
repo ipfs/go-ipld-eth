@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 	"testing"
 
 	block "github.com/ipfs/go-block-format"
@@ -150,49 +149,19 @@ func TestEthTxTrieLoggable(t *testing.T) {
   Node INTERFACE
 */
 
-func TestTxTrieResolveExtensionReference(t *testing.T) {
+func TestTxTrieResolveExtension(t *testing.T) {
 	ethTxTrie := prepareDecodedEthTxTrieExtension(t)
 
-	badCases := []string{"0", "00"}
-
-	for _, bc := range badCases {
-		obj, rest, err := ethTxTrie.Resolve([]string{bc})
-		if obj != nil {
-			t.Fatal("obj should be nil")
-		}
-
-		if rest != nil {
-			t.Fatal("rest should be nil")
-		}
-
-		if err.Error() != "no such link in this extension" {
-			t.Fatalf("Wrong error")
-		}
-	}
-
-	goodCases := []string{"01", "01a", "01ab"}
-	for _, gc := range goodCases {
-		obj, rest, err := ethTxTrie.Resolve([]string{gc})
-		_, ok := obj.(*node.Link)
-		if !ok {
-			t.Fatalf("Returned object is not a link")
-		}
-
-		if strings.Join(rest, "") != gc[2:] {
-			t.Fatal("Wrong rest of the path returned")
-		}
-
-		if err != nil {
-			t.Fatal("Error should be nil")
-		}
-	}
+	_ = ethTxTrie
 }
 
-func TestTxTrieResolveLeafChildren(t *testing.T) {
-	// HERE
+func TestTxTrieResolveLeaf(t *testing.T) {
+	ethTxTrie := prepareDecodedEthTxTrieLeaf(t)
+
+	_ = ethTxTrie
 }
 
-func TestTxTrieResolveBranchChildren(t *testing.T) {
+func TestTxTrieResolveBranch(t *testing.T) {
 	ethTxTrie := prepareDecodedEthTxTrieBranch(t)
 
 	indexes := []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"}
@@ -207,10 +176,8 @@ func TestTxTrieResolveBranchChildren(t *testing.T) {
 				t.Fatalf("Returned object is not a link (index: %d)", j)
 			}
 
-			for k, p := range []string{"nonce"} {
-				if rest[k] != p {
-					t.Fatal("Wrong rest of the path returned")
-				}
+			if rest[0] != "nonce" {
+				t.Fatal("Wrong rest of the path returned")
 			}
 
 			if err != nil {
@@ -230,6 +197,35 @@ func TestTxTrieResolveBranchChildren(t *testing.T) {
 				t.Fatalf("Wrong error")
 			}
 		}
+	}
+
+	otherSuccessCases := [][]string{
+		[]string{"0", "1", "banana"},
+		[]string{"1", "banana"},
+		[]string{"7bc", "def"},
+		[]string{"bc", "def"},
+	}
+
+	for i := 0; i < len(otherSuccessCases); i = i + 2 {
+		osc := otherSuccessCases[i]
+		expectedRest := otherSuccessCases[i+1]
+
+		obj, rest, err := ethTxTrie.Resolve(osc)
+		_, ok := obj.(*node.Link)
+		if !ok {
+			t.Fatalf("Returned object is not a link")
+		}
+
+		for j, _ := range expectedRest {
+			if rest[j] != expectedRest[j] {
+				t.Fatal("Wrong rest of the path returned")
+			}
+		}
+
+		if err != nil {
+			t.Fatal("Error should be nil")
+		}
+
 	}
 }
 

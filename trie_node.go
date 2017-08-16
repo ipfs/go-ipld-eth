@@ -3,7 +3,6 @@ package ipldeth
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/ethereum/go-ethereum/rlp"
 	cid "github.com/ipfs/go-cid"
@@ -147,24 +146,13 @@ func parseTrieNodeBranch(i []interface{}, codec uint64) ([]interface{}, error) {
 // Resolve resolves a path through this node, stopping at any link boundary
 // and returning the object found as well as the remaining path to traverse
 func (t *TrieNode) Resolve(p []string) (interface{}, []string, error) {
-	p, err := validateTriePath(p, getTxFields())
-	if err != nil {
-		return nil, nil, err
-	}
-
 	switch t.nodeKind {
 	case "extension":
-		nibblesCount := checkPathNibbles(t.elements[0].([]byte), p)
-		if nibblesCount == -1 {
-			return nil, nil, fmt.Errorf("no such link in this extension")
-		}
-		return &node.Link{Cid: t.elements[1].(*cid.Cid)}, p[nibblesCount:], nil
+		return t.resolveTrieNodeExtension(p)
+	case "leaf":
+		return t.resolveTrieNodeLeaf(p)
 	case "branch":
-		child := t.elements[getHexIndex(p[0])]
-		if child != nil {
-			return &node.Link{Cid: child.(*cid.Cid)}, p[1:], nil
-		}
-		return nil, nil, fmt.Errorf("no such link in this branch")
+		return t.resolveTrieNodeBranch(p)
 	default:
 		return nil, nil, fmt.Errorf("nodeKind case not implemented")
 	}
@@ -303,69 +291,81 @@ func nibbleToByte(k []byte) []byte {
 	return out
 }
 
-// validateTriePath takes a trie path, checking whether each element represents
-// an hexadecimal character, and returns a slice of one hex character elements,
-// allowing the input of paths such as /b/0d010/1 /0/1/1/b /cc001d4 possible.
-func validateTriePath(p []string, specialFields map[string]interface{}) ([]string, error) {
-	var (
-		testString string
-		output     []string
-	)
-
-	//
-	lastValue := p[len(p)-1]
-	if _, ok := specialFields[lastValue]; ok {
-		// Remove this lastValue and add it after the validation.
-		// Examples of lastValue: nonce, gasPrice for txs. balance for states.
-		p = p[:len(p)-1]
-	} else {
-		lastValue = ""
+// Resolve reading conveniences
+func (t *TrieNode) resolveTrieNodeExtension(p []string) (interface{}, []string, error) {
+	nibbles := t.elements[0].([]byte)
+	idx, rest := shiftFromPath(p, len(nibbles))
+	if len(idx) < len(nibbles) {
+		return nil, nil, fmt.Errorf("not enough nibbles to traverse this extension")
 	}
 
-	for _, v := range p {
-		if v == "" {
-			return nil, fmt.Errorf("Unexpected blank element in path")
+	for _, i := range idx {
+		if getHexIndex(string(i)) == -1 {
+			return nil, nil, fmt.Errorf("invalid path element")
 		}
-		testString += v
-	}
-
-	testString = strings.ToLower(testString)
-
-	for _, v := range testString {
-		c := byte(v)
-
-		switch {
-		case '0' <= c && c <= '9':
-			fallthrough
-		case 'a' <= c && c <= 'f':
-			output = append(output, string(c))
-		default:
-			return nil, fmt.Errorf("Unexpected character in path: %x", c)
-		}
-	}
-
-	// Recover the last value
-	if lastValue != "" {
-		output = append(output, lastValue)
-	}
-
-	return output, nil
-}
-
-// checkPathNibbles tests whether the given path can resolve the trie node
-// element key, returning the number of nibbles the key has if succeed.
-func checkPathNibbles(nibbles []byte, p []string) int {
-	if len(p) < len(nibbles) {
-		return -1
 	}
 
 	for i, n := range nibbles {
-		if p[i] != fmt.Sprintf("%x", n) {
-			return -1
+		if string(idx[i]) != fmt.Sprintf("%x", n) {
+			return nil, nil, fmt.Errorf("no such link in this extension")
 		}
 	}
 
-	return len(nibbles)
+	return &node.Link{Cid: t.elements[1].(*cid.Cid)}, rest, nil
+}
+
+func (t *TrieNode) resolveTrieNodeLeaf(p []string) (interface{}, []string, error) {
+	// Si en tu key tienes 0, revisa en tu objeto
+	nibbleCount := len(t.elements[0].([]byte))
+	_ = nibbleCount
+
+	return nil, nil, fmt.Errorf("nodeKind case not implemented")
+}
+
+func (t *TrieNode) resolveTrieNodeBranch(p []string) (interface{}, []string, error) {
+	idx, rest := shiftFromPath(p, 1)
+	hidx := getHexIndex(idx)
+	if hidx == -1 {
+		return nil, nil, fmt.Errorf("incorrect path")
+	}
+
+	child := t.elements[hidx]
+	if child != nil {
+		return &node.Link{Cid: child.(*cid.Cid)}, rest, nil
+	}
+	return nil, nil, fmt.Errorf("no such link in this branch")
+}
+
+// shiftFromPath extracts from a given path (as a slice of strings)
+// the given number of elements as a single string, returning whatever
+// it has not taken.
+//
+// Examples:
+// ["0", "a", "something"] and 1 -> "0" and ["a", "something"]
+// ["ab", "c", "d", "1"] and 2 -> "ab" and ["c", "d", "1"]
+// ["abc", "d", "1"] and 2 -> "ab" and ["c", "d", "1"]
+func shiftFromPath(p []string, i int) (string, []string) {
+	var (
+		out  string
+		rest []string
+	)
+
+	for _, pe := range p {
+		re := ""
+		for _, c := range pe {
+			if len(out) < i {
+				out += string(c)
+			} else {
+				re += string(c)
+			}
+		}
+
+		if len(out) == i && re != "" {
+			rest = append(rest, re)
+		}
+	}
+
+	return out, rest
 }
 
 // getHexIndex returns to you the integer 0 - 15 equivalent to your

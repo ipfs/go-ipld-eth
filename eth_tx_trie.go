@@ -122,15 +122,3 @@ func (tt *txTrie) getNodes() []*EthTxTrie {
 
 	return out
 }
-
-// getTxFields returns the fields defined in an ethereum transaction
-func getTxFields() map[string]interface{} {
-	return map[string]interface{}{
-		"nonce":     nil,
-		"gasPrice":  nil,
-		"gas":       nil,
-		"toAddress": nil,
-		"value":     nil,
-		"data":      nil,
-	}
-}
