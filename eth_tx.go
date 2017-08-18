@@ -138,12 +138,12 @@ func (t *EthTx) ResolveLink(p []string) (*node.Link, []string, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	lnk, ok := obj.(*node.Link)
-	if !ok {
-		return nil, nil, fmt.Errorf("was not a link")
+
+	if lnk, ok := obj.(*node.Link); ok {
+		return lnk, rest, nil
 	}
 
-	return lnk, rest, nil
+	return nil, nil, fmt.Errorf("resolved item was not a link")
 }
 
 // Copy will go away. It is here to comply with the interface.
