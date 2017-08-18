@@ -315,11 +315,33 @@ func (t *TrieNode) resolveTrieNodeExtension(p []string) (interface{}, []string, 
 }
 
 func (t *TrieNode) resolveTrieNodeLeaf(p []string) (interface{}, []string, error) {
-	// Si en tu key tienes 0, revisa en tu objeto
-	nibbleCount := len(t.elements[0].([]byte))
-	_ = nibbleCount
+	nibbles := t.elements[0].([]byte)
 
-	return nil, nil, fmt.Errorf("nodeKind case not implemented")
+	if len(nibbles) != 0 {
+		idx, _ := shiftFromPath(p, len(nibbles))
+		if len(idx) < len(nibbles) {
+			return nil, nil, fmt.Errorf("not enough nibbles to traverse this leaf")
+		}
+
+		for _, i := range idx {
+			if getHexIndex(string(i)) == -1 {
+				return nil, nil, fmt.Errorf("invalid path element")
+			}
+		}
+
+		for i, n := range nibbles {
+			if string(idx[i]) != fmt.Sprintf("%x", n) {
+				return nil, nil, fmt.Errorf("no such link in this extension")
+			}
+		}
+	}
+
+	link, ok := t.elements[1].(node.Node)
+	if !ok {
+		return nil, nil, fmt.Errorf("leaf children is not an IPLD node")
+	}
+
+	return link.Resolve(p)
 }
 
 func (t *TrieNode) resolveTrieNodeBranch(p []string) (interface{}, []string, error) {
