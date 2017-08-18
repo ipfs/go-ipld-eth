@@ -174,7 +174,7 @@ func TestEthTxResolve(t *testing.T) {
 		"data",
 	}
 	for _, gc := range goodCases {
-		obj, rest, err = tx.Resolve([]string{gc})
+		_, _, err = tx.Resolve([]string{gc})
 		// The adecuate marshaling of each field is tested
 		// in the go-ethereum libraries.
 		// Specifically, the address field.
