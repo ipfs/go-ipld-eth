@@ -178,9 +178,6 @@ func TestEthTxResolve(t *testing.T) {
 	}
 	for _, gc := range goodCases {
 		_, _, err = tx.Resolve([]string{gc})
-		// The adecuate marshaling of each field is tested
-		// in the go-ethereum libraries.
-		// Specifically, the address field.
 		if err != nil {
 			t.Fatalf("error should be nil %v", gc)
 		}
