@@ -208,12 +208,15 @@ func TestEthTxTree(t *testing.T) {
 	// Good cases
 	tree = tx.Tree("", 1)
 	lookupElements := map[string]interface{}{
-		"toAddress": nil,
-		"value":     nil,
-		"data":      nil,
-		"nonce":     nil,
-		"gasPrice":  nil,
 		"gas":       nil,
+		"gasPrice":  nil,
+		"input":     nil,
+		"nonce":     nil,
+		"r":         nil,
+		"s":         nil,
+		"toAddress": nil,
+		"v":         nil,
+		"value":     nil,
 	}
 
 	if len(tree) != len(lookupElements) {
