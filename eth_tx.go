@@ -2,11 +2,13 @@ package ipldeth
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 
 	cid "github.com/ipfs/go-cid"
 	node "github.com/ipfs/go-ipld-format"
 
+	hexutil "github.com/ethereum/go-ethereum/common/hexutil"
 	types "github.com/ethereum/go-ethereum/core/types"
 	rlp "github.com/ethereum/go-ethereum/rlp"
 )
@@ -104,18 +106,28 @@ func (t *EthTx) Resolve(p []string) (interface{}, []string, error) {
 	}
 
 	switch p[0] {
-	case "nonce":
-		return t.Nonce(), p[1:], nil
-	case "gasPrice":
-		return t.GasPrice(), p[1:], nil
+
 	case "gas":
-		return t.Gas(), p[1:], nil
+		return t.Gas(), nil, nil
+	case "gasPrice":
+		return t.GasPrice(), nil, nil
+	case "input":
+		return fmt.Sprintf("%x", t.Data()), nil, nil
+	case "nonce":
+		return t.Nonce(), nil, nil
+	case "r":
+		_, r, _ := t.RawSignatureValues()
+		return hexutil.EncodeBig(r), nil, nil
+	case "s":
+		_, _, s := t.RawSignatureValues()
+		return hexutil.EncodeBig(s), nil, nil
 	case "toAddress":
-		return t.To(), p[1:], nil
+		return t.To(), nil, nil
+	case "v":
+		v, _, _ := t.RawSignatureValues()
+		return hexutil.EncodeBig(v), nil, nil
 	case "value":
-		return t.Value(), p[1:], nil
-	case "data":
-		return t.Data(), p[1:], nil
+		return hexutil.EncodeBig(t.Value()), nil, nil
 	default:
 		return nil, nil, fmt.Errorf("no such link")
 	}
@@ -172,5 +184,18 @@ func (t *EthTx) Size() (uint64, error) {
 
 // MarshalJSON processes the transaction into readable JSON format.
 func (t *EthTx) MarshalJSON() ([]byte, error) {
-	return t.Transaction.MarshalJSON()
+	v, r, s := t.RawSignatureValues()
+
+	out := map[string]interface{}{
+		"gas":       t.Gas(),
+		"gasPrice":  t.GasPrice(),
+		"input":     fmt.Sprintf("%x", t.Data()),
+		"nonce":     t.Nonce(),
+		"r":         hexutil.EncodeBig(r),
+		"s":         hexutil.EncodeBig(s),
+		"toAddress": t.To(),
+		"v":         hexutil.EncodeBig(v),
+		"value":     hexutil.EncodeBig(t.Value()),
+	}
+	return json.Marshal(out)
 }

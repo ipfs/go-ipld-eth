@@ -354,7 +354,7 @@ func TestTxTrieJSONMarshalLeaf(t *testing.T) {
 
 	if fmt.Sprintf("%v", data[""].(map[string]interface{})["nonce"]) !=
 		"0x9d33" {
-		t.Fatal("Wroing nonce value")
+		t.Fatal("Wrong nonce value")
 	}
 }
 
