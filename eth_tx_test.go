@@ -166,12 +166,15 @@ func TestEthTxResolve(t *testing.T) {
 	}
 
 	goodCases := []string{
-		"nonce",
-		"gasPrice",
 		"gas",
+		"gasPrice",
+		"input",
+		"nonce",
+		"r",
+		"s",
 		"toAddress",
+		"v",
 		"value",
-		"data",
 	}
 	for _, gc := range goodCases {
 		_, _, err = tx.Resolve([]string{gc})
@@ -179,7 +182,7 @@ func TestEthTxResolve(t *testing.T) {
 		// in the go-ethereum libraries.
 		// Specifically, the address field.
 		if err != nil {
-			t.Fatal("error should be nil")
+			t.Fatalf("error should be nil %v", gc)
 		}
 	}
 
