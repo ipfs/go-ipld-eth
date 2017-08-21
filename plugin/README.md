@@ -347,9 +347,164 @@ ipfs dag get z43AaGF4uHSY4waU68L3DLUKHZP7yfZoo6QbLmid5HomZ4WtbWw/parent/parent/p
 
 ## Navigate through the transactions of a block
 
-(WIP)
+Cool. So let's say that the IPLD merkle forest has the transactions belonging
+to the block 4,139,497.
+
+We can import them from its block body json
+
+```
+cat ./test_data/eth-block-body-json-4139497 | ipfs dag put --input-enc json --format eth-block
+```
+
+Getting back the cid `z43AaGEtGPmuXQpwmknmt7hcQRRuoX6SjgDaMTfkxYcXJMn4VPx`.
+
+We can navigate the merkle tree of the transactions in this block
+resolving the link `/tx` and referencing with their indices with their RLP
+equivalent. For example to get to the transaction `0x01` (in RLP), we just
+
+```
+ipfs dag get z43AaGEtGPmuXQpwmknmt7hcQRRuoX6SjgDaMTfkxYcXJMn4VPx/tx/01
+```
+
+Returning
+
+```
+{
+    "": {
+        "gas": 186844,
+        "gasPrice": 51000000000,
+        "input": "a9059cbb000000000000000000000000744346c50253300694aea6d7e03f55a3ea91f8a30000000000000000000000000000000000000000000000000000013061e0a9ab",
+        "nonce": 790605,
+        "r": "0xe925321edf5dc905fa0ebf9a08d8915e0ce90463d55c19e8bdf0dc8e5e6ddc73",
+        "s": "0x328a5099139ae2e3f3be2736dec30fd2b3240892b77575e588b8f84a0e11307b",
+        "toAddress": "0x41e5560054824ea6b0732e656e3ad64e20e94e45",
+        "v": "0x25",
+        "value": "0x0"
+    },
+    "type": "leaf"
+}
+```
+
+There, we have a leaf of the trie, to access individual fields, we just resolve
+them
+
+```
+ipfs dag get z43AaGEtGPmuXQpwmknmt7hcQRRuoX6SjgDaMTfkxYcXJMn4VPx/tx/01/nonce
+```
+
+Obtaining `790605`.
+
+Now, Let's do some manual traversing
+
+```
+ipfs dag get ipfs dag get z43AaGEtGPmuXQpwmknmt7hcQRRuoX6SjgDaMTfkxYcXJMn4VPx/tx
+```
+
+Returns a branch node
+
+```
+{
+...
+
+
+    "8": {
+        "/": "z443fKyRJvB8PQEdWTL44qqoo2DeZr8QwkasSAfEcWJ6uDUWyh6"
+    },
+    "9": null,
+    "a": null,
+    "b": null,
+    "c": null,
+    "d": null,
+    "e": null,
+    "f": null,
+    "type": "branch"
+}
+```
+
+What happens if we follow to the `8` children?
+
+```
+ipfs dag get z43AaGEtGPmuXQpwmknmt7hcQRRuoX6SjgDaMTfkxYcXJMn4VPx/tx/8
+```
+
+Mmm, another branch
+
+```
+{
+    "0": {
+        "/": "z443fKyQhyzood9hQHXyYzbGAJeJMxMWDpbrUTXGm55WxoGGWhn"
+    },
+    "1": {
+        "/": "z443fKyMsFsxojbxvSCpJApyCvWKE9jCgrGc98cKRJjMgVBptvN"
+    },
+    "2": {
+        "/": "z443fKyR2PNJ3gNLTrPEmkHJh4YJ2mNMU9QX4HuBFNfBGnkb444"
+    },
+...
+}
+```
+
+Try again, with `2`
+
+```
+ipfs dag get z43AaGEtGPmuXQpwmknmt7hcQRRuoX6SjgDaMTfkxYcXJMn4VPx/tx/82 | jsontool
+```
+
+```
+{
+    "01": {
+        "/": "z443fKyJaFfaE7Hsozvv7HGEHqNWPEhkNgzgnXjVKdxqCE74PgF"
+    },
+    "type": "extension"
+}
+```
+
+OK, an extension. It has a key of `01`, so it's telling us that the only way
+to follow into this rabbit hole (i.e. be able to catch the next value), is by
+entering the next two nibbles (`01`)
+
+```
+ipfs dag get z43AaGEtGPmuXQpwmknmt7hcQRRuoX6SjgDaMTfkxYcXJMn4VPx/tx/820
+Error: not enough nibbles to traverse this extension
+
+ ipfs dag get z43AaGEtGPmuXQpwmknmt7hcQRRuoX6SjgDaMTfkxYcXJMn4VPx/tx/8201
+{"0":{"/":"z443fKyNhpksFN3ixSGZr2QMD1YrZoSQFz5zFt2ZwyTvaZPtWWw"},"1":{"/":"z443fKySNAgfM3gM5R2W6aEtEzgekfY4QAx2sfTeVFp3uJiAQzd"},"2":{"/":"z443fKySgQc9JHXeNyYCzgxN7358eW5wvM6yRm9MVbhd6gofbB7"},"3":{"/":"z443fKyFPKZUHbZF9Q3hPHrQvC3wX4A1BFrrXdwJmTQZaAx6rwN"},"4":null,"5":null,"6":null,"7":null,"8":null,"9":null,"a":null,"b":null,"c":null,"d":null,"e":null,"f":null,"type":"branch"}
+```
+
+We eventually reach a leaf at `820100`, which is the RLP equivalent of `255`.
+
+```
+ipfs dag get z43AaGEtGPmuXQpwmknmt7hcQRRuoX6SjgDaMTfkxYcXJMn4VPx/tx/820100
+```
+
+```
+{
+    "": {
+        "gas": 90000,
+        "gasPrice": 4000000000,
+        "input": "",
+        "nonce": 40243,
+        "r": "0x981b6223c9d3c319716da3cf057da84acf0fef897f4003d8a362d7bda42247db",
+        "s": "0x66be134c4bc432125209b5056ef274b7423bcac7cc398cf60b83aaff7b95469f",
+        "toAddress": "0xe0e6c781b8cba08bc8407eac0101b668d1fa6f49",
+        "v": "0x26",
+        "value": "0xc495a958603400"
+    },
+    "type": "leaf"
+}
+```
+
+And getting their values just referencing them
+
+```
+ipfs dag get z43AaGEtGPmuXQpwmknmt7hcQRRuoX6SjgDaMTfkxYcXJMn4VPx/tx/820100/gasPrice
+4000000000
+```
 
 ## TODO
+
+This is a _Work in Progress_. There are a number of ethereum elements to add.
+Stay tuned!
 
 * `[0x97]` - `eth-state-trie`. Support input for RLP encoded state trie elements.
   * HINT: We get them from the Parity IPFS API.
