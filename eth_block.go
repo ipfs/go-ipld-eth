@@ -118,14 +118,14 @@ func processTransactions(txs []*types.Transaction, expectedTxRoot []byte) ([]*Et
 	for idx, tx := range txs {
 		ethTx := NewTx(tx) // Will panic if it finds an error while parsing a tx
 		ethTxNodes = append(ethTxNodes, ethTx)
-		transactionTrie.addTx(idx, ethTx.RawData())
+		transactionTrie.add(idx, ethTx.RawData())
+	}
+
+	if !bytes.Equal(transactionTrie.rootHash(), expectedTxRoot) {
+		return nil, nil, fmt.Errorf("wrong transaction hash computed")
 	}
 
 	ethTxTrieNodes := transactionTrie.getNodes()
-
-	if !bytes.Equal(transactionTrie.rootHash(), expectedTxRoot) {
-		return nil, nil, fmt.Errorf("Wrong transaction hash computed!")
-	}
 
 	return ethTxNodes, ethTxTrieNodes, nil
 }

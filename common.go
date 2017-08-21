@@ -72,6 +72,10 @@ func getRLP(object interface{}) []byte {
 	return buf.Bytes()
 }
 
+/*
+  LOCAL TRIE
+*/
+
 // localTrie wraps a go-ethereum trie and its underlying memory db.
 // It contributes to the creation of the trie node objects.
 type localTrie struct {
@@ -106,6 +110,12 @@ func (lt *localTrie) add(idx int, rawdata []byte) {
 	}
 
 	lt.trie.Update(key, rawdata)
+}
+
+// rootHash returns the computed trie root.
+// Useful for sanity checks on parsed data.
+func (lt *localTrie) rootHash() []byte {
+	return lt.trie.Hash().Bytes()
 }
 
 // getKeys returns the stored keys of the memory database

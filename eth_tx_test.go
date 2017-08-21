@@ -9,6 +9,11 @@ import (
 	block "github.com/ipfs/go-block-format"
 )
 
+/*
+  EthBlock
+  INPUT
+*/
+
 func TestTxInBlockBodyRlpParsing(t *testing.T) {
 	fi, err := os.Open("test_data/eth-block-body-rlp-999999")
 	checkError(err, t)
@@ -52,6 +57,10 @@ func TestTxInBlockBodyJsonParsing(t *testing.T) {
 	testTx10Fields(output[10], t)
 }
 
+/*
+  OUTPUT
+*/
+
 func TestDecodeTransaction(t *testing.T) {
 	// Prepare the "fetched transaction".
 	// This one is supposed to be in the datastore already,
@@ -76,8 +85,243 @@ func TestDecodeTransaction(t *testing.T) {
 }
 
 /*
+  Block INTERFACE
+*/
+
+func TestEthTxLoggable(t *testing.T) {
+	txs := prepareParsedTxs(t)
+
+	l := txs[0].Loggable()
+	if _, ok := l["type"]; !ok {
+		t.Fatal("Loggable map expected the field 'type'")
+	}
+
+	if l["type"] != "eth-tx" {
+		t.Fatal("Wrong Loggable 'type' value")
+	}
+}
+
+/*
+  Node INTERFACE
+*/
+
+func TestEthTxResolve(t *testing.T) {
+	tx := prepareParsedTxs(t)[0]
+
+	// Empty path
+	obj, rest, err := tx.Resolve([]string{})
+	rtx, ok := obj.(*EthTx)
+	if !ok {
+		t.Fatal("Wrong type of returned object")
+	}
+	if rtx.Cid() != tx.Cid() {
+		t.Fatal("wrong returned object")
+	}
+	if rest != nil {
+		t.Fatal("rest should be nil")
+	}
+	if err != nil {
+		t.Fatal("err should be nil")
+	}
+
+	// len(p) > 1
+	badCases := [][]string{
+		[]string{"two", "elements"},
+		[]string{"here", "three", "elements"},
+		[]string{"and", "here", "four", "elements"},
+	}
+
+	for _, bc := range badCases {
+		obj, rest, err = tx.Resolve(bc)
+		if obj != nil {
+			t.Fatal("obj should be nil")
+		}
+		if rest != nil {
+			t.Fatal("rest should be nil")
+		}
+		if err.Error() != fmt.Sprintf("unexpected path elements past %s", bc[0]) {
+			t.Fatal("wrong error")
+		}
+	}
+
+	moreBadCases := []string{
+		"i",
+		"am",
+		"not",
+		"a",
+		"tx",
+		"field",
+	}
+	for _, mbc := range moreBadCases {
+		obj, rest, err = tx.Resolve([]string{mbc})
+		if obj != nil {
+			t.Fatal("obj should be nil")
+		}
+		if rest != nil {
+			t.Fatal("rest should be nil")
+		}
+		if err.Error() != fmt.Sprintf("no such link") {
+			t.Fatal("wrong error")
+		}
+	}
+
+	goodCases := []string{
+		"gas",
+		"gasPrice",
+		"input",
+		"nonce",
+		"r",
+		"s",
+		"toAddress",
+		"v",
+		"value",
+	}
+	for _, gc := range goodCases {
+		_, _, err = tx.Resolve([]string{gc})
+		if err != nil {
+			t.Fatalf("error should be nil %v", gc)
+		}
+	}
+
+}
+
+func TestEthTxTree(t *testing.T) {
+	tx := prepareParsedTxs(t)[0]
+	_ = tx
+
+	// Bad cases
+	tree := tx.Tree("non-empty-string", 0)
+	if tree != nil {
+		t.Fatal("Expected nil to be returned")
+	}
+
+	tree = tx.Tree("non-empty-string", 1)
+	if tree != nil {
+		t.Fatal("Expected nil to be returned")
+	}
+
+	tree = tx.Tree("", 0)
+	if tree != nil {
+		t.Fatal("Expected nil to be returned")
+	}
+
+	// Good cases
+	tree = tx.Tree("", 1)
+	lookupElements := map[string]interface{}{
+		"gas":       nil,
+		"gasPrice":  nil,
+		"input":     nil,
+		"nonce":     nil,
+		"r":         nil,
+		"s":         nil,
+		"toAddress": nil,
+		"v":         nil,
+		"value":     nil,
+	}
+
+	if len(tree) != len(lookupElements) {
+		t.Fatalf("Wrong number of elements. Got %d. Expecting %d", len(tree), len(lookupElements))
+	}
+
+	for _, te := range tree {
+		if _, ok := lookupElements[te]; !ok {
+			t.Fatalf("Unexpected Element: %v", te)
+		}
+	}
+}
+
+func TestEthTxResolveLink(t *testing.T) {
+	tx := prepareParsedTxs(t)[0]
+
+	// bad case
+	obj, rest, err := tx.ResolveLink([]string{"supercalifragilist"})
+	if obj != nil {
+		t.Fatalf("Expected obj to be nil")
+	}
+	if rest != nil {
+		t.Fatal("Expected rest to be nil")
+	}
+	if err.Error() != "no such link" {
+		t.Fatal("Wrong error")
+	}
+
+	// good case
+	obj, rest, err = tx.ResolveLink([]string{"nonce"})
+	if obj != nil {
+		t.Fatalf("Expected obj to be nil")
+	}
+	if rest != nil {
+		t.Fatal("Expected rest to be nil")
+	}
+	if err.Error() != "resolved item was not a link" {
+		t.Fatal("Wrong error")
+	}
+}
+
+func TestEthTxCopy(t *testing.T) {
+	tx := prepareParsedTxs(t)[0]
+
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Fatal("Expected panic")
+		}
+		if r != "dont use this yet" {
+			t.Fatal("Expected panic message 'dont use this yet'")
+		}
+	}()
+
+	_ = tx.Copy()
+}
+
+func TestEthTxLinks(t *testing.T) {
+	tx := prepareParsedTxs(t)[0]
+
+	if tx.Links() != nil {
+		t.Fatal("Links() expected to return nil")
+	}
+}
+
+func TestEthTxStat(t *testing.T) {
+	tx := prepareParsedTxs(t)[0]
+
+	obj, err := tx.Stat()
+	if obj == nil {
+		t.Fatal("Expected a not null object node.NodeStat")
+	}
+
+	if err != nil {
+		t.Fatal("Expected a nil error")
+	}
+}
+
+func TestEthTxSize(t *testing.T) {
+	tx := prepareParsedTxs(t)[0]
+
+	size, err := tx.Size()
+	if size != uint64(tx.Transaction.Size().Int64()) {
+		t.Fatal("Expected a size equal to 0")
+	}
+
+	if err != nil {
+		t.Fatal("Expected a nil error")
+	}
+}
+
+/*
   AUXILIARS
 */
+
+// prepareParsedTxs is a convenienve method
+func prepareParsedTxs(t *testing.T) []*EthTx {
+	fi, err := os.Open("test_data/eth-block-body-rlp-999999")
+	checkError(err, t)
+
+	_, output, _, err := FromBlockRLP(fi)
+	checkError(err, t)
+
+	return output
+}
 
 func testTx05Fields(ethTx *EthTx, t *testing.T) {
 	// Was the cid calculated?
