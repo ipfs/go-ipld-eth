@@ -52,7 +52,7 @@ func (ep *EthereumPlugin) RegisterInputEncParsers(iec coredag.InputEncParsers) e
 // EthBlockRawInputParser will take the piped input, which could an RLP binary
 // of either an RLP block header, or an RLP body (header + uncles + txs)
 // to return an IPLD Node slice.
-func EthBlockRawInputParser(r io.Reader) ([]node.Node, error) {
+func EthBlockRawInputParser(r io.Reader, mhtype uint64, mhLen int) ([]node.Node, error) {
 	blockHeader, txs, txTrieNodes, err := eth.FromBlockRLP(r)
 	if err != nil {
 		return nil, err
@@ -71,7 +71,7 @@ func EthBlockRawInputParser(r io.Reader) ([]node.Node, error) {
 
 // EthBlockJSONInputParser will take the piped input, a JSON representation of
 // a block header or body (header + uncles + txs), to return an IPLD Node slice.
-func EthBlockJSONInputParser(r io.Reader) ([]node.Node, error) {
+func EthBlockJSONInputParser(r io.Reader, mhtype uint64, mhLen int) ([]node.Node, error) {
 	blockHeader, txs, txTrieNodes, err := eth.FromBlockJSON(r)
 	if err != nil {
 
