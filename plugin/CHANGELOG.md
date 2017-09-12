@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## `0.0.4`
+
+* `eth-state-trie` and `eth-account-snapshot` support.
+
 ## `0.0.3`
 
 * Improve in-code docs for the plugin loader.

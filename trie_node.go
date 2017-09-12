@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/rlp"
 	cid "github.com/ipfs/go-cid"
 	node "github.com/ipfs/go-ipld-format"
+
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
 // TrieNode is the general abstraction for

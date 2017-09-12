@@ -506,15 +506,14 @@ ipfs dag get z43AaGEtGPmuXQpwmknmt7hcQRRuoX6SjgDaMTfkxYcXJMn4VPx/tx/820100/gasPr
 This is a _Work in Progress_. There are a number of ethereum elements to add.
 Stay tuned!
 
-* `[0x97]` - `eth-state-trie`. Support input for RLP encoded state trie elements.
-  * HINT: We get them from the Parity IPFS API.
+* `[0x96]` - `eth-state-trie`. Support input for RLP encoded state trie elements.
   * Develop this library feature in tandem with `go-ipld-eth-import`.
+  * `[0x97]` - `eth-account-snapshot` is being developed at the same time.
 
-* `[0x92]` - `eth-tx-receipt`:
+* `[0x95]` - `eth-tx-receipt`:
   * Propose a script to get all receipts from a block and make a JSON array of them.
   * Support the input of this JSON array to form the `eth-tx-receipt-trie` (`[0x96]`) leaves, and the `eth-tx-receipt` objects.
 
 * The rest of the IPLD ETH Types:
-  * `[0x93]` - `eth-account-snapshot`
-  * `[0x94]` - `eth-block-list`
+  * `[0x91]` - `eth-block-list`
   * `[0x98]` - `eth-storage-trie`
