@@ -60,8 +60,8 @@ func decodeTrieNode(c *cid.Cid, b []byte,
 		if nodeKind == "leaf" {
 			elements, err = leafDecoder(decoded)
 		}
-		if err != nil {
-			return nil, err
+		if nodeKind != "extension" && nodeKind != "leaf" {
+			return nil, fmt.Errorf("unexpected nodeKind returned from decoder")
 		}
 	case 17:
 		nodeKind = "branch"
