@@ -421,7 +421,7 @@ Returns a branch node
 }
 ```
 
-What happens if we follow to the `8` children?
+What happens if we follow to the `8` child?
 
 ```
 ipfs dag get z43AaGEtGPmuXQpwmknmt7hcQRRuoX6SjgDaMTfkxYcXJMn4VPx/tx/8
