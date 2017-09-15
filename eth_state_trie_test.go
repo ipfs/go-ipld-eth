@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	cid "github.com/ipfs/go-cid"
+	node "github.com/ipfs/go-ipld-format"
 )
 
 /*
@@ -163,4 +164,81 @@ func TestStateTrieLoggable(t *testing.T) {
 	if l["type"] != "eth-state-trie" {
 		t.Fatal("Wrong Loggable 'type' value")
 	}
+}
+
+/*
+  TRIE NODE (Through EthStateTrie)
+  Node INTERFACE
+*/
+
+func TestTraverseStateTrieWithResolve(t *testing.T) {
+	var err error
+
+	stMap := prepareStateTrieMap(t)
+
+	// This is the cid of the root of the block 0
+	// z45oqTS97WG4WsMjquajJ8PB9Ubt3ks7rGmo14P5XWjnPL7LHDM
+	currentNode := stMap["z45oqTS97WG4WsMjquajJ8PB9Ubt3ks7rGmo14P5XWjnPL7LHDM"]
+
+	// This is the path we want to traverse
+	// The eth address is 0x5abfec25f74cd88437631a7731906932776356f9
+	// Its keccak-256 is cdd3e25edec0a536a05f5e5ab90a5603624c0ed77453b2e8f955cf8b43d4d0fb
+	// We use the keccak-256(addr) to traverse the state trie in ethereum.
+	var traversePath []string
+	for _, s := range "cdd3e25edec0a536a05f5e5ab90a5603624c0ed77453b2e8f955cf8b43d4d0fb" {
+		traversePath = append(traversePath, string(s))
+	}
+	traversePath = append(traversePath, "balance")
+
+	var obj interface{}
+	for {
+		obj, traversePath, err = currentNode.Resolve(traversePath)
+		link, ok := obj.(*node.Link)
+		if !ok {
+			break
+		}
+		if err != nil {
+			t.Fatal("Error should be nil")
+		}
+
+		currentNode = stMap[link.Cid.String()]
+		if currentNode == nil {
+			t.Fatal("state trie node not found in memory map")
+		}
+	}
+
+	if fmt.Sprintf("%v", obj) != "11901484239480000000000000" {
+		t.Fatal("Wrong value, expected a balance")
+	}
+}
+
+func prepareStateTrieMap(t *testing.T) map[string]*EthStateTrie {
+	filepaths := []string{
+		"test_data/eth-state-trie-rlp-0e8b34",
+		"test_data/eth-state-trie-rlp-56864f",
+		"test_data/eth-state-trie-rlp-6fc2d7",
+		"test_data/eth-state-trie-rlp-727994",
+		"test_data/eth-state-trie-rlp-c9070d",
+		"test_data/eth-state-trie-rlp-d5be90",
+		"test_data/eth-state-trie-rlp-d7f897",
+		"test_data/eth-state-trie-rlp-eb2f5f",
+	}
+
+	out := make(map[string]*EthStateTrie)
+
+	for _, fp := range filepaths {
+		fi, err := os.Open(fp)
+		checkError(err, t)
+
+		stateTrieNode, err := FromStateTrieRLP(fi)
+		checkError(err, t)
+
+		out[stateTrieNode.Cid().String()] = stateTrieNode
+
+		// DEBUG
+		// fmt.Printf("%x")
+		// DEBUG
+	}
+
+	return out
 }

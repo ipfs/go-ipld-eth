@@ -334,6 +334,7 @@ func (t *TrieNode) resolveTrieNodeLeaf(p []string) (interface{}, []string, error
 			if string(idx[i]) != fmt.Sprintf("%x", n) {
 				return nil, nil, fmt.Errorf("no such link in this extension")
 			}
+			p = p[1:]
 		}
 	}
 
