@@ -46,6 +46,201 @@ func TestAccountSnapshotLoggable(t *testing.T) {
 }
 
 /*
+  Node INTERFACE
+*/
+func TestAccountSnapshotResolve(t *testing.T) {
+	eas := prepareEthAccountSnapshot(t)
+
+	// Empty path
+	obj, rest, err := eas.Resolve([]string{})
+	reas, ok := obj.(*EthAccountSnapshot)
+	if !ok {
+		t.Fatal("Wrong type of returned object")
+	}
+	if reas.Cid() != eas.Cid() {
+		t.Fatal("wrong returned object")
+	}
+	if rest != nil {
+		t.Fatal("rest should be nil")
+	}
+	if err != nil {
+		t.Fatal("err should be nil")
+	}
+
+	// len(p) > 1
+	badCases := [][]string{
+		[]string{"two", "elements"},
+		[]string{"here", "three", "elements"},
+		[]string{"and", "here", "four", "elements"},
+	}
+
+	for _, bc := range badCases {
+		obj, rest, err = eas.Resolve(bc)
+		if obj != nil {
+			t.Fatal("obj should be nil")
+		}
+		if rest != nil {
+			t.Fatal("rest should be nil")
+		}
+		if err.Error() != fmt.Sprintf("unexpected path elements past %s", bc[0]) {
+			t.Fatal("wrong error")
+		}
+	}
+
+	moreBadCases := []string{
+		"i",
+		"am",
+		"not",
+		"an",
+		"account",
+		"field",
+	}
+	for _, mbc := range moreBadCases {
+		obj, rest, err = eas.Resolve([]string{mbc})
+		if obj != nil {
+			t.Fatal("obj should be nil")
+		}
+		if rest != nil {
+			t.Fatal("rest should be nil")
+		}
+		if err.Error() != fmt.Sprintf("no such link") {
+			t.Fatal("wrong error")
+		}
+	}
+
+	goodCases := []string{
+		"balance",
+		"codeHash",
+		"nonce",
+		"root",
+	}
+	for _, gc := range goodCases {
+		_, _, err = eas.Resolve([]string{gc})
+		if err != nil {
+			t.Fatalf("error should be nil %v", gc)
+		}
+	}
+
+}
+
+func TestAccountSnapshotTree(t *testing.T) {
+	eas := prepareEthAccountSnapshot(t)
+
+	// Bad cases
+	tree := eas.Tree("non-empty-string", 0)
+	if tree != nil {
+		t.Fatal("Expected nil to be returned")
+	}
+
+	tree = eas.Tree("non-empty-string", 1)
+	if tree != nil {
+		t.Fatal("Expected nil to be returned")
+	}
+
+	tree = eas.Tree("", 0)
+	if tree != nil {
+		t.Fatal("Expected nil to be returned")
+	}
+
+	// Good cases
+	tree = eas.Tree("", 1)
+	lookupElements := map[string]interface{}{
+		"balance":  nil,
+		"codeHash": nil,
+		"nonce":    nil,
+		"root":     nil,
+	}
+
+	if len(tree) != len(lookupElements) {
+		t.Fatalf("Wrong number of elements. Got %d. Expecting %d", len(tree), len(lookupElements))
+	}
+
+	for _, te := range tree {
+		if _, ok := lookupElements[te]; !ok {
+			t.Fatalf("Unexpected Element: %v", te)
+		}
+	}
+}
+
+func TestAccountSnapshotResolveLink(t *testing.T) {
+	eas := prepareEthAccountSnapshot(t)
+
+	// bad case
+	obj, rest, err := eas.ResolveLink([]string{"supercalifragilist"})
+	if obj != nil {
+		t.Fatalf("Expected obj to be nil")
+	}
+	if rest != nil {
+		t.Fatal("Expected rest to be nil")
+	}
+	if err.Error() != "no such link" {
+		t.Fatal("Wrong error")
+	}
+
+	// good case
+	obj, rest, err = eas.ResolveLink([]string{"nonce"})
+	if obj != nil {
+		t.Fatalf("Expected obj to be nil")
+	}
+	if rest != nil {
+		t.Fatal("Expected rest to be nil")
+	}
+	if err.Error() != "resolved item was not a link" {
+		t.Fatal("Wrong error")
+	}
+}
+
+func TestAccountSnapshotCopy(t *testing.T) {
+	eas := prepareEthAccountSnapshot(t)
+
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Fatal("Expected panic")
+		}
+		if r != "dont use this yet" {
+			t.Fatal("Expected panic message 'dont use this yet'")
+		}
+	}()
+
+	_ = eas.Copy()
+}
+
+func TestAccountSnapshotLinks(t *testing.T) {
+	eas := prepareEthAccountSnapshot(t)
+
+	if eas.Links() != nil {
+		t.Fatal("Links() expected to return nil")
+	}
+}
+
+func TestAccountSnapshotStat(t *testing.T) {
+	eas := prepareEthAccountSnapshot(t)
+
+	obj, err := eas.Stat()
+	if obj == nil {
+		t.Fatal("Expected a not null object node.NodeStat")
+	}
+
+	if err != nil {
+		t.Fatal("Expected a nil error")
+	}
+}
+
+func TestAccountSnapshotSize(t *testing.T) {
+	eas := prepareEthAccountSnapshot(t)
+
+	size, err := eas.Size()
+	if size != uint64(0) {
+		t.Fatal("Expected a size equal to 0")
+	}
+
+	if err != nil {
+		t.Fatal("Expected a nil error")
+	}
+}
+
+/*
   AUXILIARS
 */
 func prepareEthAccountSnapshot(t *testing.T) *EthAccountSnapshot {
