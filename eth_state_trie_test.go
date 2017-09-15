@@ -234,10 +234,6 @@ func prepareStateTrieMap(t *testing.T) map[string]*EthStateTrie {
 		checkError(err, t)
 
 		out[stateTrieNode.Cid().String()] = stateTrieNode
-
-		// DEBUG
-		// fmt.Printf("%x")
-		// DEBUG
 	}
 
 	return out
