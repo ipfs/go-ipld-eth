@@ -46,6 +46,7 @@ func (ep *EthereumPlugin) Version() string {
 func (ep *EthereumPlugin) RegisterInputEncParsers(iec coredag.InputEncParsers) error {
 	iec.AddParser("raw", "eth-block", EthBlockRawInputParser)
 	iec.AddParser("json", "eth-block", EthBlockJSONInputParser)
+	iec.AddParser("raw", "eth-state-trie", EthStateTrieRawInputParser)
 	return nil
 }
 
@@ -89,15 +90,27 @@ func EthBlockJSONInputParser(r io.Reader, mhtype uint64, mhLen int) ([]node.Node
 	return out, nil
 }
 
+// EthStateTrieRawInputParser will take the piped input, which is an RLP binary
+// representation of a state trie node, to return an IPLD Node.
+func EthStateTrieRawInputParser(r io.Reader, mhtype uint64, mhLen int) ([]node.Node, error) {
+	stateTrieNode, err := eth.FromStateTrieRLP(r)
+	if err != nil {
+		return nil, err
+	}
+
+	return []node.Node{stateTrieNode}, nil
+}
+
 /*
   OUTPUT BLOCK DECODERS
 */
 
 // RegisterBlockDecoders enters which functions will help us to decode the requested IPLD blocks.
 func (ep *EthereumPlugin) RegisterBlockDecoders(dec node.BlockDecoder) error {
-	dec.Register(eth.MEthBlock, EthBlockParser)   // eth-block
-	dec.Register(eth.MEthTx, EthTxParser)         // eth-tx
-	dec.Register(eth.MEthTxTrie, EthTxTrieParser) // eth-tx-trie
+	dec.Register(eth.MEthBlock, EthBlockParser)         // eth-block
+	dec.Register(eth.MEthTx, EthTxParser)               // eth-tx
+	dec.Register(eth.MEthTxTrie, EthTxTrieParser)       // eth-tx-trie
+	dec.Register(eth.MEthStateTrie, EthStateTrieParser) // eth-state-trie
 	return nil
 }
 
@@ -115,4 +128,10 @@ func EthTxParser(b block.Block) (node.Node, error) {
 // (ethereum transactions as patricia merkle tree leaves)
 func EthTxTrieParser(b block.Block) (node.Node, error) {
 	return eth.DecodeEthTxTrie(b.Cid(), b.RawData())
+}
+
+// EthStateTrieParser takes care of the eth-state-trie IPLD objects
+// (ethereum patricia merkle tree state nodes)
+func EthStateTrieParser(b block.Block) (node.Node, error) {
+	return eth.DecodeEthStateTrie(b.Cid(), b.RawData())
 }

@@ -500,6 +500,11 @@ And getting their values just referencing them
 ipfs dag get z43AaGEtGPmuXQpwmknmt7hcQRRuoX6SjgDaMTfkxYcXJMn4VPx/tx/820100/gasPrice
 4000000000
 ```
+### Traversing the state trie
+
+(TODO)
+(find . -name "eth-state-trie-rlp-*" -exec sh -c "cat {} | ipfs dag put --input-enc raw --format eth-state-trie; echo" \;)
+
 
 ## TODO
 

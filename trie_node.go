@@ -319,7 +319,7 @@ func (t *TrieNode) resolveTrieNodeLeaf(p []string) (interface{}, []string, error
 	nibbles := t.elements[0].([]byte)
 
 	if len(nibbles) != 0 {
-		idx, _ := shiftFromPath(p, len(nibbles))
+		idx, rest := shiftFromPath(p, len(nibbles))
 		if len(idx) < len(nibbles) {
 			return nil, nil, fmt.Errorf("not enough nibbles to traverse this leaf")
 		}
@@ -334,8 +334,9 @@ func (t *TrieNode) resolveTrieNodeLeaf(p []string) (interface{}, []string, error
 			if string(idx[i]) != fmt.Sprintf("%x", n) {
 				return nil, nil, fmt.Errorf("no such link in this extension")
 			}
-			p = p[1:]
 		}
+
+		p = rest
 	}
 
 	link, ok := t.elements[1].(node.Node)

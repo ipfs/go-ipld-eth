@@ -1,6 +1,7 @@
 package ipldeth
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/big"
 
@@ -85,15 +86,14 @@ func (as *EthAccountSnapshot) Resolve(p []string) (interface{}, []string, error)
 	}
 
 	switch p[0] {
-
 	case "balance":
 		return as.Balance, nil, nil
 	case "codeHash":
-		return as.CodeHash, nil, nil
+		return fmt.Sprintf("0x%x", as.CodeHash), nil, nil
 	case "nonce":
 		return as.Nonce, nil, nil
 	case "root":
-		return as.Root, nil, nil
+		return fmt.Sprintf("0x%x", as.Root), nil, nil
 	default:
 		return nil, nil, fmt.Errorf("no such link")
 	}
@@ -141,4 +141,19 @@ func (as *EthAccountSnapshot) Stat() (*node.NodeStat, error) {
 // Size will go away. It is here to comply with the interface.
 func (as *EthAccountSnapshot) Size() (uint64, error) {
 	return 0, nil
+}
+
+/*
+  EthAccountSnapshot
+*/
+
+// MarshalJSON processes the transaction into readable JSON format.
+func (as *EthAccountSnapshot) MarshalJSON() ([]byte, error) {
+	out := map[string]interface{}{
+		"balance":  as.Balance,
+		"codeHash": fmt.Sprintf("0x%x", as.CodeHash),
+		"nonce":    as.Nonce,
+		"root":     fmt.Sprintf("0x%x", as.Root),
+	}
+	return json.Marshal(out)
 }
