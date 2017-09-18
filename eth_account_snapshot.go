@@ -144,7 +144,7 @@ func (as *EthAccountSnapshot) Size() (uint64, error) {
 }
 
 /*
-  EthAccountSnapshot
+  EthAccountSnapshot functions
 */
 
 // MarshalJSON processes the transaction into readable JSON format.

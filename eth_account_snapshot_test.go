@@ -1,8 +1,10 @@
 package ipldeth
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
 	"testing"
 )
 
@@ -237,6 +239,40 @@ func TestAccountSnapshotSize(t *testing.T) {
 
 	if err != nil {
 		t.Fatal("Expected a nil error")
+	}
+}
+
+/*
+  EthAccountSnapshot functions
+*/
+
+func TestAccountSnapshotMarshalJSON(t *testing.T) {
+	eas := prepareEthAccountSnapshot(t)
+
+	jsonOutput, err := eas.MarshalJSON()
+	checkError(err, t)
+
+	var data map[string]interface{}
+	err = json.Unmarshal(jsonOutput, &data)
+	checkError(err, t)
+
+	balanceExpression := regexp.MustCompile(`{"balance":16011846000000000000000,`)
+	if !balanceExpression.MatchString(string(jsonOutput)) {
+		t.Fatal("Balance expression not found")
+	}
+
+	if fmt.Sprintf("%v", data["codeHash"]) !=
+		"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470" {
+		t.Fatal("Wrong Marshaled Value")
+	}
+
+	if fmt.Sprintf("%v", data["nonce"]) != "0" {
+		t.Fatal("Wrong Marshaled Value")
+	}
+
+	if fmt.Sprintf("%v", data["root"]) !=
+		"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421" {
+		t.Fatal("Wrong Marshaled Value")
 	}
 }
 
