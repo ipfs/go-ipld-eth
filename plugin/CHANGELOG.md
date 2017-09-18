@@ -3,6 +3,7 @@
 ## `0.0.4`
 
 * `eth-state-trie` and `eth-account-snapshot` support.
+  * Accepts Raw RLP encoded input.
 
 ## `0.0.3`
 
