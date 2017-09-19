@@ -502,18 +502,77 @@ ipfs dag get z43AaGEtGPmuXQpwmknmt7hcQRRuoX6SjgDaMTfkxYcXJMn4VPx/tx/820100/gasPr
 ```
 ### Traversing the state trie
 
-(TODO)
-(find . -name "eth-state-trie-rlp-*" -exec sh -c "cat {} | ipfs dag put --input-enc raw --format eth-state-trie; echo" \;)
+#### Inserting test data
 
+##### Block 0
+
+(TODO)
+
+##### A traversal of state tries
+
+(TODO)
+
+#### Let's do this
+
+Suppose we want to know at the block `0` (genesis block), what is the `balance`
+of the account `0x5abfec25f74cd88437631a7731906932776356f9` (HINT: The EF account).
+
+The first thing we need to do is getting the `keccak256()` hash of this address.
+
+Sounds cumbersome? Maybe. In the future, we may add a system to transform the addresses
+into their secure hash, and _then_ initiate the resolving... For now, we can use a
+script in our facorite language to get the secure hash.
+
+In go it'd be
+
+```go
+package main
+
+import (
+	"encoding/hex"
+	"fmt"
+
+	"github.com/ethereum/go-ethereum/crypto"
+)
+
+func main() {
+	var ethAddress string
+
+	flag.String(&ethAddress, "eth-address", "5abfec25f74cd88437631a7731906932776356f9", "Address which keccak-256 hash we want")
+	flag.Parse()
+
+	kb, err := hex.DecodeString(ethAddress)
+	if err != nil {
+		panic(err)
+	}
+	secureKey := crypto.Keccak256(kb)
+
+	fmt.Printf("%x\n", secureKey)
+}
+```
+
+Copy it into the `/tmp` directory, name it `getKeccak256.go` and do
+
+```
+cd /tmp
+go build getKeccak256.go
+
+## Remove the "0x" part
+./getKeccak256 --eth-address 5abfec25f74cd88437631a7731906932776356f9
+
+## You get this
+## cdd3e25edec0a536a05f5e5ab90a5603624c0ed77453b2e8f955cf8b43d4d0fb
+```
+
+OK. This last result in the traversal path!
+Let's move though this path from the genesis block
+
+(TODO)
 
 ## TODO
 
 This is a _Work in Progress_. There are a number of ethereum elements to add.
 Stay tuned!
-
-* `[0x96]` - `eth-state-trie`. Support input for RLP encoded state trie elements.
-  * Develop this library feature in tandem with `go-ipld-eth-import`.
-  * `[0x97]` - `eth-account-snapshot` is being developed at the same time.
 
 * `[0x95]` - `eth-tx-receipt`:
   * Propose a script to get all receipts from a block and make a JSON array of them.
