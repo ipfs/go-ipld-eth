@@ -212,6 +212,92 @@ func TestTraverseStateTrieWithResolve(t *testing.T) {
 	}
 }
 
+func TestStateTrieResolveLinks(t *testing.T) {
+	fi, err := os.Open("test_data/eth-state-trie-rlp-eb2f5f")
+	checkError(err, t)
+
+	stNode, err := FromStateTrieRLP(fi)
+	checkError(err, t)
+
+	// bad case
+	obj, rest, err := stNode.ResolveLink([]string{"supercalifragilist"})
+	if obj != nil {
+		t.Fatalf("Expected obj to be nil")
+	}
+	if rest != nil {
+		t.Fatal("Expected rest to be nil")
+	}
+	if err.Error() != "invalid path element" {
+		t.Fatal("Wrong error")
+	}
+
+	// good case
+	obj, rest, err = stNode.ResolveLink([]string{"d8"})
+	if obj == nil {
+		t.Fatalf("Expected a not nil obj to be returned")
+	}
+	if rest != nil {
+		t.Fatal("Expected rest to be nil")
+	}
+	if err != nil {
+		t.Fatal("Expected error to be nil")
+	}
+}
+
+func TestStateTrieCopy(t *testing.T) {
+	fi, err := os.Open("test_data/eth-state-trie-rlp-eb2f5f")
+	checkError(err, t)
+
+	stNode, err := FromStateTrieRLP(fi)
+	checkError(err, t)
+
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Fatal("Expected panic")
+		}
+		if r != "dont use this yet" {
+			t.Fatal("Expected panic message 'dont use this yet'")
+		}
+	}()
+
+	_ = stNode.Copy()
+}
+
+func TestStateTrieStat(t *testing.T) {
+	fi, err := os.Open("test_data/eth-state-trie-rlp-eb2f5f")
+	checkError(err, t)
+
+	stNode, err := FromStateTrieRLP(fi)
+	checkError(err, t)
+
+	obj, err := stNode.Stat()
+	if obj == nil {
+		t.Fatal("Expected a not null object node.NodeStat")
+	}
+
+	if err != nil {
+		t.Fatal("Expected a nil error")
+	}
+}
+
+func TestStateTrieSize(t *testing.T) {
+	fi, err := os.Open("test_data/eth-state-trie-rlp-eb2f5f")
+	checkError(err, t)
+
+	stNode, err := FromStateTrieRLP(fi)
+	checkError(err, t)
+
+	size, err := stNode.Size()
+	if size != uint64(0) {
+		t.Fatal("Expected a size equal to 0")
+	}
+
+	if err != nil {
+		t.Fatal("Expected a nil error")
+	}
+}
+
 func prepareStateTrieMap(t *testing.T) map[string]*EthStateTrie {
 	filepaths := []string{
 		"test_data/eth-state-trie-rlp-0e8b34",
