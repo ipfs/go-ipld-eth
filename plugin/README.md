@@ -506,22 +506,54 @@ ipfs dag get z43AaGEtGPmuXQpwmknmt7hcQRRuoX6SjgDaMTfkxYcXJMn4VPx/tx/820100/gasPr
 
 ##### Block 0
 
-(TODO)
+In case you haven't downloaded the json of the block 0 yourself yet from an RPC
+ethereum client, you can find it in the `test_data` dirctory, let's add it to
+your datastore
+
+```
+cat test_data/eth-block-body-json-0 | ipfs dag put --input-enc json --format eth-block
+```
+
+You should get its cid, write it down somewhere. As we are going to use it later.
+
+```
+z43AaGF73rnZ14vjAkMQ8xoNfBShmq8qaiqFuELAx1vxSTzfGY2
+```
 
 ##### A traversal of state tries
 
-(TODO)
+In the `test_data` directory, you can find several RLP encoded raw files including
+the state trie nodes needed for this experiment. We will import them using the command
+
+```
+find test_data/. -name "eth-state-trie-rlp-*" -exec sh -c "cat {} | ipfs dag put --input-enc raw --format eth-state-trie; echo" \;
+```
+
+Getting the result
+
+```
+z45oqTRuZDa8Kvo9MWtEmGZJfnsg39ngDa4CyHY77oRD5Yd8PiX
+z45oqTRzQCbfigmMLqYdCoe2qGfo8pimaPTFGDwcsjT7WeYNQJG
+z45oqTS26iKhYHbe5shTQhyW6DZE1Ffy24ENRVKQUvvZZwAyFuV
+z45oqTS2HJkhG9adyTo1oAyZX9gArKH9mYunD1B3cY6Daowu3BC
+z45oqTS87AwCRMhezXeH45bHKELbVeAh4WaDnC4eLa45XAKxpUE
+z45oqTS8xp8GjTp5mZM4KS8trCfiK2hbZ2RoKwZhpnMr9pLQsTr
+z45oqTS97WG4WsMjquajJ8PB9Ubt3ks7rGmo14P5XWjnPL7LHDM
+z45oqTSAQWTPvpx4JsgqCzkpsn64J4rfqXvy25nSxvVdWbHd1ue
+```
 
 #### Let's do this
+
+##### Getting the traversal path
 
 Suppose we want to know at the block `0` (genesis block), what is the `balance`
 of the account `0x5abfec25f74cd88437631a7731906932776356f9` (HINT: The EF account).
 
 The first thing we need to do is getting the `keccak256()` hash of this address.
 
-Sounds cumbersome? Maybe. In the future, we may add a system to transform the addresses
+Sounds cumbersome? Maybe. In the future, we may add a system to transform the address
 into their secure hash, and _then_ initiate the resolving... For now, we can use a
-script in our facorite language to get the secure hash.
+script in our favorite language to get this hash.
 
 In go it'd be
 
@@ -564,10 +596,141 @@ go build getKeccak256.go
 ## cdd3e25edec0a536a05f5e5ab90a5603624c0ed77453b2e8f955cf8b43d4d0fb
 ```
 
-OK. This last result in the traversal path!
+OK. This last result _is_ the very traversal path!
 Let's move though this path from the genesis block
 
-(TODO)
+##### Traversing step by step
+
+As we got the cid of the block 0, we can get it performing
+
+```
+ipfs dag get z43AaGF73rnZ14vjAkMQ8xoNfBShmq8qaiqFuELAx1vxSTzfGY2
+```
+
+To access the state trie root, let's call `/root` in this element
+
+```
+ipfs dag get z43AaGF73rnZ14vjAkMQ8xoNfBShmq8qaiqFuELAx1vxSTzfGY2/root
+```
+
+Getting a `branch` kind of node
+
+```
+{
+...
+    "c": {
+        "/": "z45oqTS26iKhYHbe5shTQhyW6DZE1Ffy24ENRVKQUvvZZwAyFuV"
+    },
+    "d": {
+        "/": "z45oqTS2s1xH8sZBRmqBw5nKC3HCVAn3kNEoBFiESe6Fh1zybLG"
+    },
+    "e": {
+        "/": "z45oqTRz6Skjh42RUJrMTv2Jdcmf6Z8bnRcrXw6RFRdJpUgXKkT"
+    },
+    "f": {
+        "/": "z45oqTS3rVwGVvYm6gnJH1MtuY3bFyReLMq6XoNgVqs5naK9wEr"
+    },
+    "type": "branch"
+}
+```
+
+Now, as the path is `cdd3e25edec0a536a05f5e5ab90a5603624c0ed77453b2e8f955cf8b43d4d0fb`,
+we want the `c` link in this branch, to start with.
+
+Let's do a couple iterations
+
+```
+ipfs dag get z43AaGF73rnZ14vjAkMQ8xoNfBShmq8qaiqFuELAx1vxSTzfGY2/root/c
+```
+
+```
+{
+...
+    },
+    "d": {
+        "/": "z45oqTS8xp8GjTp5mZM4KS8trCfiK2hbZ2RoKwZhpnMr9pLQsTr"
+    },
+    "e": {
+        "/": "z45oqTSBFKHowXCEU6GV7o3ZHhRDCRgfbU1JHHLM1abFkwx2ZSm"
+    },
+    "f": {
+        "/": "z45oqTRyYKpFd3zSAkh8udFdvJ2VsCyZ6p3daG4cqLUnJUkJwCt"
+    },
+    "type": "branch"
+}
+```
+
+```
+ipfs dag get z43AaGF73rnZ14vjAkMQ8xoNfBShmq8qaiqFuELAx1vxSTzfGY2/root/c/d
+```
+
+```
+{
+...
+    },
+    "d": {
+        "/": "z45oqTS2HJkhG9adyTo1oAyZX9gArKH9mYunD1B3cY6Daowu3BC"
+    },
+    "e": {
+        "/": "z45oqTRynfnn9xUv6nyyEkx8JDLhSBxFbhcHLdqJtq261yMWHYN"
+    },
+    "f": {
+        "/": "z45oqTRtpRLZUE4yoq4AjB9JfYGvvhPNJejuNGieB7kc6ECh6Ze"
+    },
+    "type": "branch"
+}
+```
+
+```
+ipfs dag get z43AaGF73rnZ14vjAkMQ8xoNfBShmq8qaiqFuELAx1vxSTzfGY2/root/c/d/d
+```
+
+```
+{
+    "3e25edec0a536a05f5e5ab90a5603624c0ed77453b2e8f955cf8b43d4d0fb": {
+        "balance": 11901484239480000000000000,
+        "codeHash": "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+        "nonce": 0,
+        "root": "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"
+    },
+    "type": "leaf"
+}
+```
+
+Boom! We hit a `leaf` pretty quickly! This one contains the rest of the path.
+
+To access the contains of the account, we need to complete the leaf, in other words, do
+
+```
+ipfs dag get z45oqTS97WG4WsMjquajJ8PB9Ubt3ks7rGmo14P5XWjnPL7LHDM/c/d/d/3/e/2/5/e/d/e/c/0/a/5/3/6/a/0/5/f/5/e/5/a/b/9/0/a/5/6/0/3/6/2/4/c/0/e/d/7/7/4/5/3/b/2/e/8/f/9/5/5/c/f/8/b/4/3/d/4/d/0/f/b/
+```
+
+(We expect you to use a tool "in real life" to do this... I did it by hand and its boooring).
+
+Getting the object
+
+```
+{
+    "balance": 11901484239480000000000000,
+    "codeHash": "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+    "nonce": 0,
+    "root": "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"
+}
+```
+
+From there is a matter of taking the right element, in this case, `balance`
+
+```
+ipfs dag get z45oqTS97WG4WsMjquajJ8PB9Ubt3ks7rGmo14P5XWjnPL7LHDM/c/d/d/3/e/2/5/e/d/e/c/0/a/5/3/6/a/0/5/f/5/e/5/a/b/9/0/a/5/6/0/3/6/2/4/c/0/e/d/7/7/4/5/3/b/2/e/8/f/9/5/5/c/f/8/b/4/3/d/4/d/0/f/b/balance
+```
+
+Getting this result. A LOT OF CRYPTO-MONEY.
+
+```
+11901484239480000000000000
+```
+
+Check this result here [in etherscan](https://etherscan.io/address/0x5abfec25f74cd88437631a7731906932776356f9).
 
 ## TODO
 
