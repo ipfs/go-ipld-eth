@@ -13,6 +13,8 @@ import (
 )
 
 // IPLD Codecs for Ethereum
+// See the authoritative document:
+// https://github.com/multiformats/multicodec/blob/master/table.csv
 const (
 	MEthBlock           = 0x90
 	MEthBlockList       = 0x91

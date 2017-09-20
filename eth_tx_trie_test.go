@@ -229,6 +229,44 @@ func TestTxTrieResolveBranch(t *testing.T) {
 	}
 }
 
+func TestTraverseTxTrieWithResolve(t *testing.T) {
+	var err error
+
+	txMap := prepareTxTrieMap(t)
+
+	// This is the cid of the tx root at the block 4,139,497
+	currentNode := txMap["z443fKyMXhAPwsjNDytVEjCu6EtDdWGUZ5AzFE3dkJtTYnTHAoy"]
+
+	// This is the path we want to traverse
+	// the transaction id 256, which is RLP encoded to 820100
+	var traversePath []string
+	for _, s := range "820100" {
+		traversePath = append(traversePath, string(s))
+	}
+	traversePath = append(traversePath, "value")
+
+	var obj interface{}
+	for {
+		obj, traversePath, err = currentNode.Resolve(traversePath)
+		link, ok := obj.(*node.Link)
+		if !ok {
+			break
+		}
+		if err != nil {
+			t.Fatal("Error should be nil")
+		}
+
+		currentNode = txMap[link.Cid.String()]
+		if currentNode == nil {
+			t.Fatal("transaction trie node not found in memory map")
+		}
+	}
+
+	if fmt.Sprintf("%v", obj) != "0xc495a958603400" {
+		t.Fatalf("Wrong value %v", obj)
+	}
+}
+
 func TestTxTrieTreeBadParams(t *testing.T) {
 	ethTxTrie := prepareDecodedEthTxTrieBranch(t)
 
@@ -445,4 +483,23 @@ func prepareDecodedEthTxTrieBranch(t *testing.T) *EthTxTrie {
 			"d0f77466ee52a1c00f71caf57e0e1aa01de18a3ca834a0bbc043cc0d03623ba4c7b514" +
 			"7d5aca56450b548f797d712d5198f5e8b35f542d8080808080808080"
 	return prepareDecodedEthTxTrie(branchDataRLP, t)
+}
+
+func prepareTxTrieMap(t *testing.T) map[string]*EthTxTrie {
+	fi, err := os.Open("test_data/eth-block-body-json-4139497")
+	checkError(err, t)
+
+	_, _, txTrieNodes, err := FromBlockJSON(fi)
+	checkError(err, t)
+
+	out := make(map[string]*EthTxTrie)
+
+	for _, txTrieNode := range txTrieNodes {
+		decodedNode, err := DecodeEthTxTrie(txTrieNode.Cid(), txTrieNode.RawData())
+		checkError(err, t)
+
+		out[txTrieNode.Cid().String()] = decodedNode
+	}
+
+	return out
 }

@@ -3,13 +3,14 @@ package ipldeth
 import (
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/rlp"
 	cid "github.com/ipfs/go-cid"
 	node "github.com/ipfs/go-ipld-format"
+
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
-// EthTxTrie (eth-tx-trie codec 0x95) represents
+// EthTxTrie (eth-tx-trie codec 0x92) represents
 // a node from the transaction trie in ethereum.
 type EthTxTrie struct {
 	*TrieNode

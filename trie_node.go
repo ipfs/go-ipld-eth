@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/rlp"
 	cid "github.com/ipfs/go-cid"
 	node "github.com/ipfs/go-ipld-format"
+
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
 // TrieNode is the general abstraction for
@@ -59,8 +60,8 @@ func decodeTrieNode(c *cid.Cid, b []byte,
 		if nodeKind == "leaf" {
 			elements, err = leafDecoder(decoded)
 		}
-		if err != nil {
-			return nil, err
+		if nodeKind != "extension" && nodeKind != "leaf" {
+			return nil, fmt.Errorf("unexpected nodeKind returned from decoder")
 		}
 	case 17:
 		nodeKind = "branch"
@@ -318,7 +319,7 @@ func (t *TrieNode) resolveTrieNodeLeaf(p []string) (interface{}, []string, error
 	nibbles := t.elements[0].([]byte)
 
 	if len(nibbles) != 0 {
-		idx, _ := shiftFromPath(p, len(nibbles))
+		idx, rest := shiftFromPath(p, len(nibbles))
 		if len(idx) < len(nibbles) {
 			return nil, nil, fmt.Errorf("not enough nibbles to traverse this leaf")
 		}
@@ -334,6 +335,8 @@ func (t *TrieNode) resolveTrieNodeLeaf(p []string) (interface{}, []string, error
 				return nil, nil, fmt.Errorf("no such link in this extension")
 			}
 		}
+
+		p = rest
 	}
 
 	link, ok := t.elements[1].(node.Node)
