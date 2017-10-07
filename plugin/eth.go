@@ -47,6 +47,7 @@ func (ep *EthereumPlugin) RegisterInputEncParsers(iec coredag.InputEncParsers) e
 	iec.AddParser("raw", "eth-block", EthBlockRawInputParser)
 	iec.AddParser("json", "eth-block", EthBlockJSONInputParser)
 	iec.AddParser("raw", "eth-state-trie", EthStateTrieRawInputParser)
+	iec.AddParser("raw", "eth-storage-trie", EthStorageTrieRawInputParser)
 	return nil
 }
 
@@ -101,16 +102,28 @@ func EthStateTrieRawInputParser(r io.Reader, mhtype uint64, mhLen int) ([]node.N
 	return []node.Node{stateTrieNode}, nil
 }
 
+// EthStorageTrieRawInputParser will take the piped input, which is an RLP binary
+// representation of a storage trie node, to return an IPLD Node.
+func EthStorageTrieRawInputParser(r io.Reader, mhtype uint64, mhLen int) ([]node.Node, error) {
+	storageTrieNode, err := eth.FromStorageTrieRLP(r)
+	if err != nil {
+		return nil, err
+	}
+
+	return []node.Node{storageTrieNode}, nil
+}
+
 /*
   OUTPUT BLOCK DECODERS
 */
 
 // RegisterBlockDecoders enters which functions will help us to decode the requested IPLD blocks.
 func (ep *EthereumPlugin) RegisterBlockDecoders(dec node.BlockDecoder) error {
-	dec.Register(eth.MEthBlock, EthBlockParser)         // eth-block
-	dec.Register(eth.MEthTx, EthTxParser)               // eth-tx
-	dec.Register(eth.MEthTxTrie, EthTxTrieParser)       // eth-tx-trie
-	dec.Register(eth.MEthStateTrie, EthStateTrieParser) // eth-state-trie
+	dec.Register(eth.MEthBlock, EthBlockParser)             // eth-block
+	dec.Register(eth.MEthTx, EthTxParser)                   // eth-tx
+	dec.Register(eth.MEthTxTrie, EthTxTrieParser)           // eth-tx-trie
+	dec.Register(eth.MEthStateTrie, EthStateTrieParser)     // eth-state-trie
+	dec.Register(eth.MEthStorageTrie, EthStorageTrieParser) // eth-storage-trie
 	return nil
 }
 
@@ -134,4 +147,10 @@ func EthTxTrieParser(b block.Block) (node.Node, error) {
 // (ethereum patricia merkle tree state nodes)
 func EthStateTrieParser(b block.Block) (node.Node, error) {
 	return eth.DecodeEthStateTrie(b.Cid(), b.RawData())
+}
+
+// EthStorageTrieParser takes care of the eth-storage-trie IPLD objects
+// (ethereum patricia merkle tree state nodes)
+func EthStorageTrieParser(b block.Block) (node.Node, error) {
+	return eth.DecodeEthStorageTrie(b.Cid(), b.RawData())
 }
