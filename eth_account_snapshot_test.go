@@ -263,7 +263,7 @@ func TestAccountSnapshotMarshalJSON(t *testing.T) {
 
 	code, _ := data["codeHash"].(map[string]interface{})
 	if fmt.Sprintf("%s", code["/"]) !=
-		"z46gvXAFfCZuCCVi5sXRVYrdHFHQwFw6VdSGumL22MKk4qazAEa" {
+		"zb34WAxFQD4oNVkG9PRFauGV6cu51KgpQbBXARSbVDD5d9Viw" {
 		t.Fatal("Wrong Marshaled Value")
 	}
 
@@ -273,7 +273,7 @@ func TestAccountSnapshotMarshalJSON(t *testing.T) {
 
 	root, _ := data["root"].(map[string]interface{})
 	if fmt.Sprintf("%s", root["/"]) !=
-		"z46gvXAN45x7Y6NtefinhLtJ2UNDwHnbsggxNcuEN89hWvy6ktt" {
+		"z46gvXALNuXdCn6ts67LS6JkPUkZb7zNrH6fMayQM7U9HNLDtWt" {
 		t.Fatal("Wrong Marshaled Value")
 	}
 }
