@@ -16,6 +16,7 @@ import (
 // See the authoritative document:
 // https://github.com/multiformats/multicodec/blob/master/table.csv
 const (
+	MEthCodeHash        = 0x55
 	MEthBlock           = 0x90
 	MEthBlockList       = 0x91
 	MEthTxTrie          = 0x92
