@@ -245,14 +245,27 @@ func (t *TrieNode) MarshalJSON() ([]byte, error) {
 	case "extension":
 		fallthrough
 	case "leaf":
-		var val string
+		var hexPrefix string
 		for _, e := range t.elements[0].([]byte) {
-			val += fmt.Sprintf("%x", e)
+			hexPrefix += fmt.Sprintf("%x", e)
 		}
+
+		// if we got a byte we need to do this casting otherwise
+		// it will be marshaled to a base64 encoded value
+		if _, ok := t.elements[1].([]byte); ok {
+			var hexVal string
+			for _, e := range t.elements[1].([]byte) {
+				hexVal += fmt.Sprintf("%x", e)
+			}
+
+			t.elements[1] = hexVal
+		}
+
 		out = map[string]interface{}{
-			"type": t.nodeKind,
-			val:    t.elements[1],
+			"type":    t.nodeKind,
+			hexPrefix: t.elements[1],
 		}
+
 	case "branch":
 		out = map[string]interface{}{
 			"type": "branch",

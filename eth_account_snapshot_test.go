@@ -261,8 +261,9 @@ func TestAccountSnapshotMarshalJSON(t *testing.T) {
 		t.Fatal("Balance expression not found")
 	}
 
-	if fmt.Sprintf("%v", data["codeHash"]) !=
-		"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470" {
+	code, _ := data["codeHash"].(map[string]interface{})
+	if fmt.Sprintf("%s", code["/"]) !=
+		"zb34WAxFQD4oNVkG9PRFauGV6cu51KgpQbBXARSbVDD5d9Viw" {
 		t.Fatal("Wrong Marshaled Value")
 	}
 
@@ -270,8 +271,9 @@ func TestAccountSnapshotMarshalJSON(t *testing.T) {
 		t.Fatal("Wrong Marshaled Value")
 	}
 
-	if fmt.Sprintf("%v", data["root"]) !=
-		"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421" {
+	root, _ := data["root"].(map[string]interface{})
+	if fmt.Sprintf("%s", root["/"]) !=
+		"z46gvXALNuXdCn6ts67LS6JkPUkZb7zNrH6fMayQM7U9HNLDtWt" {
 		t.Fatal("Wrong Marshaled Value")
 	}
 }
