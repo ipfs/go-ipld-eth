@@ -1,3 +1,8 @@
+
+# Deprecated
+Note that this repo is archived and been eclipsed by https://github.com/vulcanize/go-codec-dageth
+
+
 go-ipld-eth
 ==================
 
